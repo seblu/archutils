@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# atc - Archlinux Tree Cleaner
-# Copyright © 2012 Sébastien Luttringer
+# Copyright © Sébastien Luttringer
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
