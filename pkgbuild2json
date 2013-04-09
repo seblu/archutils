@@ -1,0 +1,74 @@
+#!/usr/bin/python
+# coding: utf-8
+
+# pkgbuild2json - Transform PKGBUILD into JSON
+# Copyright © 2012 Sébastien Luttringer
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+'''Transform PKGBUILD into JSON'''
+
+import argparse
+import json
+import logging
+import os
+import subprocess
+import sys
+
+def parse_argv():
+    '''Parse command line arguments'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", action="store_true",
+                        help="print env into JSON")
+    parser.add_argument("PKGBUILD", nargs="?", default="PKGBUILD")
+    return parser.parse_args()
+
+def pkgbuild2json(path):
+    '''Print shell variable of a PKGBUILD'''
+    # check PKGBUILD can be openned
+    try:
+        open(path, "r")
+    except IOError as exp:
+        errmsg = "Unable to open %s: %s" % (path, exp)
+        logging.error(errmsg)
+        exit(1)
+    # use bash to export vars.
+    # WARNING: CODE IS EXECUTED
+    argv = ["bash", "-c",
+            "set -a; source '%s'; exec '%s' --env" % (path, sys.argv[0])]
+    proc = subprocess.Popen(argv, stdout=subprocess.PIPE, shell=False)
+    stdout = proc.communicate("")[0]
+    proc.wait()
+    jpkgbuild = json.loads(stdout.decode())
+    # remove original env variables
+    for i in os.environ.keys():
+        jpkgbuild.pop(i, "")
+    return json.dumps(jpkgbuild)
+
+def main():
+    '''Program entry point'''
+    # parser cmdline
+    args = parse_argv()
+    # print env into json
+    if args.env:
+        print(json.dumps(dict(os.environ.items())))
+    else:
+        print(pkgbuild2json(args.PKGBUILD))
+    return 0
+
+if __name__ == '__main__':
+    main()
+
+# vim:set ts=4 sw=4 et ai:
