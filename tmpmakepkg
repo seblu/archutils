@@ -1,0 +1,6 @@
+#!/bin/bash
+
+mountpoint -q "/dev/shm" && export TMPDIR=/dev/shm
+export BUILDDIR=$(mktemp --directory -t makepkg.XXXXX)
+echo -e "\e[1;32m==>\e[;1m BUILDDIR=$BUILDDIR\e[m"
+exec makepkg "${@:--c}"

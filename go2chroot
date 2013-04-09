@@ -1,0 +1,17 @@
+#!/bin/bash
+
+base='/var/lib/archbuild'
+
+# list chroots
+if (( $# == 0 )); then
+	cd "$base"
+	ls --color -1d */{copy,root}
+	exit 0
+fi
+
+if [[ "$1" =~ i686 ]]; then
+	linux32 mkarchroot -r bash "$base/$1"
+elif [[ "$1" =~ x86_64 ]]; then
+	linux64 mkarchroot -r bash "$base/$1"
+fi
+

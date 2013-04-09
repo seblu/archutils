@@ -1,0 +1,13 @@
+#!/bin/bash
+# Copyright 2012 Seblu
+
+(( $# < 1 )) && echo "usage: ${0##*/} <pkgsource> [pkgsource]..." >&2
+
+for pkg; do
+  [[ -e "$pkg.tar.gz" ]] && echo "$pkg.tar.gz already exists. skipped!" >&2 && continue
+	wget "http://aur.archlinux.org/packages/${pkg:0:2}/$pkg/$pkg.tar.gz" || continue
+  tar -xvv --no-same-owner --no-same-permissions -f "$pkg.tar.gz"
+  (( $UID == 0 )) && chown -R nobody:nobody "$pkg"
+done
+
+# vim:set ts=2 sw=2 ft=sh et:

@@ -1,0 +1,37 @@
+#!/bin/bash
+# this script build
+
+[[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf
+[[ -r ~/.makepkg.conf ]] && source ~/.makepkg.conf
+
+shopt -s nullglob
+shopt -s xpg_echo
+
+pkgs=(*$PKGEXT)
+
+(( ${#pkgs[@]} == 0 )) && 'No package to sign' && exit 1
+
+echo '\e[1;32m==>\e[;1m You will sign the following packages:\e[m'
+for p in "${pkgs[@]}"; do
+	echo "$p"
+done
+
+#echo -n '\e[1;32m==>\e[;1m Type your password: \e[m'
+#read -sr password
+#echo
+
+#(( ${#password} == 0 )) && echo 'Empty password!' && exit 1
+
+echo -n '\e[1;32m==>\e[;1m Type enter to continue\e[m'
+read
+
+set -e
+
+for p in "${pkgs[@]}"; do
+	[[ -e "$p.sig" ]] && 'rm' "$p.sig"
+	#echo -n "$password" | gpg --detach-sign --passphrase-fd 0 "$p"
+	echo signing "$p"
+	gpg --detach-sign "$p"
+done
+
+# vim:set ts=2 sw=2 ft=sh noet:

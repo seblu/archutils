@@ -1,0 +1,98 @@
+#!/bin/bash
+# this script push a package to my svn repository
+
+
+dbname='seblu'
+repo="/srv/http/archlinux/$dbname"
+repo_32="$repo/i686"
+repo_64="$repo/x86_64"
+
+[[ ! -f PKGBUILD ]] && echo 'No PKGBUILD' && exit 1
+
+source /etc/makepkg.conf
+source PKGBUILD
+
+shopt -s nullglob
+
+msg() {
+	printf "\e[1;32m==>\e[0;1m $1\e[m\n" "${@:1}"
+}
+
+# usage : in_array( $needle, $haystack )
+# return : 0 - found
+#          1 - not found
+in_array() {
+	local needle=$1; shift
+	local item
+	for item in "$@"; do
+	   [[ $item = $needle ]] && return 0 # Found
+	done
+	return 1 # Not Found
+}
+
+# sign $1
+sign() {
+	msg "Sign $1"
+	gpg --detach-sign "$1" || exit 1
+}
+
+# commit
+declare -a to_32 to_64
+
+for _pkgname in "${pkgname[@]}"; do
+	# add any pkg in both repo
+	filename="$_pkgname-$pkgver-$pkgrel-any$PKGEXT"
+	if [[ -f "$filename" ]]; then
+		[[ -f "$filename.sig" ]] || sign "$filename"
+		# register
+		to_32+=("$filename")
+		to_64+=("$filename")
+	fi
+	# add i686 repo
+	filename="$_pkgname-$pkgver-$pkgrel-i686$PKGEXT"
+	if [[ -f "$filename" ]]; then
+		[[ -f "$filename.sig" ]] || sign "$filename"
+		to_32+=("$filename")
+	fi
+	# add x86_64 repo
+	filename="$_pkgname-$pkgver-$pkgrel-x86_64$PKGEXT"
+	if [[ -f "$filename" ]]; then
+		[[ -f "$filename.sig" ]] || sign "$filename"
+		to_64+=("$filename")
+	fi
+done
+
+if ((${#to_32[@]} > 0)); then
+	msg "Adding into $dbname i686 dir"
+	# copy new
+	for _i in "${to_32[@]}"; do
+		cp -vf "$_i" "$repo_32" || exit 2
+		cp -vf "$_i.sig" "$repo_32" || exit 2
+	done
+	pushd "$repo_32" >/dev/null
+	# update db
+	msg "Adding into $dbname i686 db"
+	repo-add -q -s "$dbname.db.tar.gz" "${to_32[@]}"
+	msg "Adding into $dbname i686 file db"
+	repo-add -q -s -f "$dbname.files.tar.gz" "${to_32[@]}"
+	popd >/dev/null
+fi
+
+
+if ((${#to_64[@]} > 0)); then
+	msg "Adding into $dbname x86_64 dir"
+	# copy new
+	for _i in "${to_64[@]}"; do
+		cp -vf "$_i" "$repo_64" || exit 2
+		cp -vf "$_i.sig" "$repo_64" || exit 2
+	done
+	pushd "$repo_64" >/dev/null
+	# update db
+	msg "Adding into $dbname x86_64 db"
+	repo-add -q -s "$dbname.db.tar.gz" "${to_64[@]}"
+	msg "Adding into $dbname x86_64 file db"
+	repo-add -q -s -f "$dbname.files.tar.gz" "${to_64[@]}"
+	popd >/dev/null
+fi
+
+# vim:set ts=2 sw=2 ft=sh noet:

@@ -1,0 +1,37 @@
+#!/bin/bash
+# this script build
+
+#chroot='/var/tmp/chroots'
+#chroot_32="$chroot/seblu-i686"
+#chroot_64="$chroot/seblu-x86_64"
+
+[[ ! -f PKGBUILD ]] && echo 'No PKGBUILD' && exit 1
+
+source /etc/makepkg.conf
+source PKGBUILD
+
+# usage : in_array( $needle, $haystack )
+# return : 0 - found
+#          1 - not found
+in_array() {
+	local needle=$1; shift
+	local item
+	for item in "$@"; do
+	   [[ $item = $needle ]] && return 0 # Found
+	done
+	return 1 # Not Found
+}
+
+# arch x86 and any builds
+if in_array 'i686' "${arch[@]}" || in_array 'any' "${arch[@]}"; then
+	#linux32 makechrootpkg -c -r "$chroot_32" || exit 1
+	seblu-i686-build
+fi
+
+# arch amd64 build
+if in_array 'x86_64' "${arch[@]}"; then
+	#linux64 makechrootpkg -c -r "$chroot_64" || exit 1
+	seblu-x86_64-build
+fi
+
+# vim:set ts=2 sw=2 ft=sh noet:

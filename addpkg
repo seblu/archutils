@@ -1,0 +1,10 @@
+#!/bin/bash
+
+(( $# != 1 )) && echo "usage: ${0##*/} name" && exit 1
+
+mkdir -p "$1"/{repos,trunk}
+touch "$1"/trunk/PKGBUILD
+svn add "$1"
+svn propset svn:keywords 'Id' "$1/trunk/PKGBUILD"
+
+# vim:set ts=2 sw=2 ft=sh noet:

@@ -1,0 +1,59 @@
+#!/bin/bash
+
+pkg_host='root@whooper.v.seblu.net'
+pkg_base='/root/packages'
+pkg_regex=''
+arch_regexp="($(uname -m)|any)"
+
+usage() {
+	echo "usage: ${0##*/} <list|get|install> [pkg_regex] [arch_regexp] [pkg_base] [pkg_host]" >&2
+	echo 'default:'
+	echo "   pkg_host: $pkg_host"
+	echo "   pkg_regex: $pkg_regex"
+	echo "   pkg_base: $pkg_base"
+	echo "   arch_regex: $arch_regexp"
+	exit 1
+}
+
+(( $# >= 1 )) || usage
+
+case $1 in
+	list|get|install) action="$1";;
+	*) usage;;
+esac
+
+[[ -n "$2" ]] && pkg_regex=$2
+[[ -n "$3" ]] && arch_regexp=$3
+[[ -n "$4" ]] && pkg_base=$4
+[[ -n "$5" ]] && pkg_host=$5
+
+list_tmp=$(mktemp)
+ssh "$pkg_host" \
+"find '$pkg_base' -type f \
+-regextype posix-egrep -regex '.*/$pkg_regex.*-$arch_regexp.pkg\.tar\.xz'" \
+</dev/null >"$list_tmp" 2>/dev/null
+exec 3<>"$list_tmp"
+
+while read -u 3 -r line; do
+	[[ $line ]] || continue
+	case $action in
+	list)
+		echo "$line"
+		;;
+	get)
+		[[ -f $(basename $line) ]] &&
+			echo "==> $(basename $line): already exists. skipped!" && continue
+		scp "$pkg_host:$line" .
+		;;
+	install)
+		(( EUID == 0 )) && pacman='pacman' || pacman='sudo pacman'
+		pkg_tmp=$(mktemp)
+		scp "$pkg_host:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
+		rm -f "$pkg_tmp"
+		;;
+	esac
+done
+
+rm -f "$list_tmp"
+
+# vim:set ts=2 sw=2 ft=sh noet:

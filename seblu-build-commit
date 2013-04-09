@@ -1,0 +1,6 @@
+#!/bin/bash
+# this script build and push a package to my svn repository
+
+seblu-build && seblu-commit
+
+# vim:set ts=2 sw=2 ft=sh noet:
