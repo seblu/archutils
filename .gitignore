@@ -7,3 +7,4 @@ PKGBUILD
 TODO
 test
 tags
+*.pkg.tar.xz
