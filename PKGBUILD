@@ -25,8 +25,8 @@ package() {
     seblu-update go2chroot seblu-commit	addpkg sign archbuild-dl pkgbuild2json \
     seblu-remove tmpmakepkg "$pkgdir/usr/bin"
   # symlink archbuild
-  ln -s /usr/bin/archbuild $pkgdir/usr/bin/seblu-i686-build
-  ln -s /usr/bin/archbuild $pkgdir/usr/bin/seblu-x86_64-build
+  ln -s archbuild $pkgdir/usr/bin/seblu-i686-build
+  ln -s archbuild $pkgdir/usr/bin/seblu-x86_64-build
 }
 
 # vim:set ts=2 sw=2 et:
