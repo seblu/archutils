@@ -9,9 +9,9 @@ url='https://github.com/seblu/archutils'
 license=('GPL2')
 depends=('python' 'bash' 'devtools')
 
-pkgver() {
-  git log -1 --pretty=format:%h
-}
+#pkgver() {
+#  git log -1 --pretty=format:%h
+#}
 
 package() {
   cd "$startdir"
