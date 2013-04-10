@@ -24,5 +24,4 @@ for _p; do
 	repo-remove -q -s "$REPO"/i686/seblu.files.tar.gz "$_p"
 	repo-remove -q -s "$REPO"/x86_64/seblu.db.tar.gz "$_p"
 	repo-remove -q -s "$REPO"/x86_64/seblu.files.tar.gz "$_p"
-	rm "$REPO"/{i686,x86_64}/"$_p"*.pkg.tar.xz{,.sig}
 done
