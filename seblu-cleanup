@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Copyright © Sébastien Luttringer
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+db='seblu.db.tar.gz'
+repo='/srv/http/archlinux/seblu'
+arch=('i686' 'x86_64')
+
+# source makepkg config
+. /etc/makepkg.conf
+
+cleanup() {
+	[[ -e $dir_file ]] && rm -f "$dir_file"
+	[[ -e $db_file ]] && rm -f "$db_file"
+}
+
+# remove temp file on exit
+trap cleanup 0
+
+# create temporary files for computes diff
+dir_file=$(mktemp ${0##*/}.XXXXX)
+db_file=$(mktemp ${0##*/}.XXXXX)
+
+# naive implementation without locking
+for arch in "${arch[@]}"; do
+	[[ -t 1 ]] && echo ":: Cleaning $repo/$arch"
+	# list files in directory
+	find "$repo/$arch" -type f -name "*${PKGEXT}" -printf '%f\n'|sort > "$dir_file"
+	# list files in database
+	bsdtar -xOf "$repo/$arch/$db" | awk '/^%FILENAME%/{getline;print}'|sort > "$db_file"
+	# compute file not in db
+	comm -23 "$dir_file" "$db_file" | while read -r file; do
+		rm -v -f "$repo/$arch/$file"{,.sig}
+	done
+done
+
+exit 0
+
+# vim:set ts=2 sw=2 ft=sh noet:

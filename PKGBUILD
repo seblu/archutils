@@ -23,7 +23,7 @@ package() {
   # install binaries
   install -m755 atc seblu-build seblu-repo-add aurdown seblu-build-commit \
     seblu-update go2chroot seblu-commit	addpkg sign archbuild-dl pkgbuild2json \
-    seblu-remove tmpmakepkg "$pkgdir/usr/bin"
+    seblu-remove tmpmakepkg seblu-cleanup "$pkgdir/usr/bin"
   # symlink archbuild
   ln -s archbuild $pkgdir/usr/bin/seblu-i686-build
   ln -s archbuild $pkgdir/usr/bin/seblu-x86_64-build
