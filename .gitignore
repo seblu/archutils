@@ -1,0 +1,9 @@
+src/
+pkg/
+PKGBUILD
+*.pyc
+.*.swp
+*~
+TODO
+test
+tags
