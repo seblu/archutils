@@ -16,7 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-
 (( $# != 1 )) && echo "usage: ${0##*/} name" && exit 1
 
 mkdir -p "$1"/{repos,trunk}
