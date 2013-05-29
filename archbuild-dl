@@ -22,14 +22,23 @@ pkg_regex=''
 arch_regexp="($(uname -m)|any)"
 
 usage() {
-	echo "usage: ${0##*/} <list|get|install> [pkg_regex] [arch_regexp] [pkg_base] [pkg_host]" >&2
-	echo 'default:'
-	echo "   pkg_host: $pkg_host"
-	echo "   pkg_regex: $pkg_regex"
-	echo "   pkg_base: $pkg_base"
-	echo "   arch_regex: $arch_regexp"
+	echo "usage: ${0##*/} [options] <list|get|install> [pkg_regex]" >&2
+	echo 'options:'
+	echo "   -h: host address (current: $pkg_host)"
+	echo "   -b: base path (current: $pkg_base)"
+	echo "   -a: arch regex (current: $arch_regexp)"
 	exit 1
 }
+
+while getopts 'h:b:a:' opt; do
+	case $opt in
+		a) arch_regexp=$OPTARG;;
+		b) pkg_base=$OPTARG;;
+		h) pkg_host=$OPTARG;;
+		*) usage;;
+	esac
+done
+shift $((OPTIND - 1));
 
 (( $# >= 1 )) || usage
 
@@ -37,11 +46,6 @@ case $1 in
 	list|get|install) action="$1";;
 	*) usage;;
 esac
-
-[[ -n "$2" ]] && pkg_regex=$2
-[[ -n "$3" ]] && arch_regexp=$3
-[[ -n "$4" ]] && pkg_base=$4
-[[ -n "$5" ]] && pkg_host=$5
 
 list_tmp=$(mktemp)
 ssh "$pkg_host" \
