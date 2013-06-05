@@ -47,6 +47,8 @@ case $1 in
 	*) usage;;
 esac
 
+pkg_regex="$2"
+
 list_tmp=$(mktemp)
 ssh "$pkg_host" \
 "find '$pkg_base' -type f \
