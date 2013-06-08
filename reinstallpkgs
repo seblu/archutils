@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pacman -S "$@" $(comm -23 <(pacman -Qq|sort) <(pacman -Qqm|sort))
