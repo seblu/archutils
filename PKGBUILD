@@ -16,7 +16,7 @@ package() {
   install -m644 COPYRIGHT LICENSE "$pkgdir/usr/share/licenses/$pkgname"
   # install binaries
   install -m755 atc aurdown go2chroot	addpkg sign archbuild-dl pkgbuild2json \
-    tmpmakepkg reinstallpkgs "$pkgdir/usr/bin"
+    tmpmakepkg reinstallpkgs restart-updated-service "$pkgdir/usr/bin"
 }
 
 # vim:set ts=2 sw=2 et:
