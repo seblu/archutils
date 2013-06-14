@@ -23,10 +23,10 @@ arch_regexp="($(uname -m)|any)"
 
 usage() {
 	echo "usage: ${0##*/} [options] <list|get|install> [pkg_regex]" >&2
-	echo 'options:'
-	echo "   -h: host address (current: $pkg_host)"
-	echo "   -b: base path (current: $pkg_base)"
-	echo "   -a: arch regex (current: $arch_regexp)"
+	echo 'options:' >&2
+	echo "   -h: host address (current: $pkg_host)" >&2
+	echo "   -b: base path (current: $pkg_base)" >&2
+	echo "   -a: arch regex (current: $arch_regexp)" >&2
 	exit 1
 }
 
