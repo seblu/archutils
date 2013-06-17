@@ -21,6 +21,13 @@
 
 (( $UID != 0 )) && echo 'You need to be root' && exit 1
 
+if [[ -t 1 ]]; then
+	shopt -s xpg_echo
+	c_title='\e[1;33m'
+	c_svc='\e[1;31m'
+	c_rst='\e[m'
+fi
+
 usage() {
 	echo "usage ${0##*/} [options]"
 	echo 'options:'
@@ -58,10 +65,12 @@ for svc in "${services[@]}"; do
 	deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 	if [[ -n $deleted ]]; then
 		if [[ $verbose ]]; then
-			echo "Service: $svc"
-			echo "Pid: $pid"
-			echo "Command: systemctl restart '$svc'"
-			echo 'Deleted files:'
+			echo "${c_title}Service:${c_svc} $svc${c_rst}"
+			echo "${c_title}Pid:${c_rst} $pid"
+			echo "${c_title}Commands:${c_rst}"
+			echo "systemctl reload '$svc'"
+			echo "systemctl restart '$svc'"
+			echo "${c_title}Deleted files:${c_rst}"
 			echo "$deleted"
 			echo
 		else
