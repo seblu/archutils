@@ -26,18 +26,20 @@ usage() {
 	echo 'options:'
 	echo '   -h: this help' >&2
 	echo '   -r: restart services' >&2
-	echo '   -l: list services' >&2
+	echo '   -l: list systemd commands to execute' >&2
 	echo '   -R: reload services' >&2
 	echo "   -n: don't call systemd daemon-reload" >&2
+	echo "   -v: verbose mode" >&2
 	exit 1
 }
 
-while getopts 'hrlRn' opt; do
+while getopts 'hrlRnv' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
 		n) daemon_reload=false;;
 		l) list=true;;
+		v) verbose=true;;
 		*) usage;;
 	esac
 done
@@ -55,7 +57,16 @@ for svc in "${services[@]}"; do
 	pid=$(systemctl show "$svc"|sed -nr 's/^MainPID=(.*)/\1/p')
 	deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 	if [[ -n $deleted ]]; then
-		echo systemctl restart "$svc"
+		if [[ $verbose ]]; then
+			echo "Service: $svc"
+			echo "Pid: $pid"
+			echo "Command: systemctl restart '$svc'"
+			echo 'Deleted files:'
+			echo "$deleted"
+			echo
+		else
+			echo "systemctl restart '$svc'"
+		fi
 		[[ $systemd_cmd ]] && systemctl "$systemd_cmd" "$svc"
 	fi
 done
