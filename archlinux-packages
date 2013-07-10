@@ -1,0 +1,17 @@
+#!/bin/bash
+# (c) 2013 Sebastien Luttringer
+
+if [ "$1" = "config" ]; then
+  echo "graph_title Archlinux Packages"
+  echo 'graph_category archlinux'
+  echo "total.label Total"
+  echo "local.label Local"
+  echo "unused.label Unused"
+  echo "updatable.label Updatable"
+  exit 0
+fi
+
+echo total.value $(pacman -Qq|wc -l)
+echo local.value $(pacman -Qqm|wc -l)
+echo unused.value $(pacman -Qqdt|wc -l)
+echo updatable.value $(( $(pacman -Squp|wc -l) - 1))

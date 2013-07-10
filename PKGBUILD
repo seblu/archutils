@@ -11,12 +11,14 @@ depends=('python' 'bash')
 
 package() {
   cd "$startdir"
-  install -dm755 "$pkgdir"/usr/{share/licenses/$pkgname,bin}
+  install -dm755 "$pkgdir"/usr/{share/licenses/$pkgname,bin,lib/munin/plugins}
   # install legal stuff
   install -m644 COPYRIGHT LICENSE "$pkgdir/usr/share/licenses/$pkgname"
   # install binaries
   install -m755 atc aurdown go2chroot	addpkg sign archbuild-dl pkgbuild2json \
     tmpmakepkg reinstallpkgs checkservices "$pkgdir/usr/bin"
+  # install munin stuff
+  install -m755 archlinux-{pacfiles,packages} "$pkgdir/usr/lib/munin/plugins"
 }
 
 # vim:set ts=2 sw=2 et:

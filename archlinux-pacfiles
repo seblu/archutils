@@ -1,0 +1,17 @@
+#!/bin/bash
+# (c) 2013 Sebastien Luttringer
+
+if [ "$1" = "config" ]; then
+  echo "graph_title Archlinux Pacman Files"
+  echo 'graph_category archlinux'
+  echo "pacsave.label .save files count"
+  echo "pacorig.label .orig files count"
+  echo "pacnew.label .new files count"
+  exit 0
+fi
+
+out="$(find /etc -xdev \( -name \*.pacnew -o -name \*.pacorig -o -name \*.pacsave \) 2>/dev/null)"
+
+echo pacsave.value $(find /etc -xdev -name \*.pacsave 2>/dev/null|wc -l)
+echo pacorig.value $(find /etc -xdev -name \*.pacorig 2>/dev/null|wc -l)
+echo pacnew.value $(find /etc -xdev -name \*.pacnew 2>/dev/null|wc -l)
