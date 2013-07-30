@@ -76,6 +76,6 @@ for svc in "${services[@]}"; do
 		else
 			echo "systemctl restart '$svc'"
 		fi
-		[[ $systemd_cmd ]] && systemctl "$systemd_cmd" "$svc"
+		[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
 	fi
 done
