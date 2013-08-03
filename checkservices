@@ -85,3 +85,5 @@ done
 
 # show failed units
 [[ $systemd_cmd && $show_failed ]] && systemctl --failed --all
+
+exit 0
