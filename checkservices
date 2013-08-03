@@ -40,7 +40,7 @@ usage() {
 	exit 1
 }
 
-while getopts 'hrlRnv' opt; do
+while getopts 'hrRnNv' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
