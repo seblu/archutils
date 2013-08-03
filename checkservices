@@ -82,6 +82,7 @@ for svc in "${services[@]}"; do
 		[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
 	fi
 done
+wait
 
 # show failed units
 [[ $systemd_cmd && $show_failed ]] && systemctl --failed --all
