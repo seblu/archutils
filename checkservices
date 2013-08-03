@@ -36,6 +36,7 @@ usage() {
 	echo '   -l: list systemd commands to execute' >&2
 	echo '   -R: reload services' >&2
 	echo "   -n: don't call systemd daemon-reload" >&2
+	echo "   -N: don't display failed units after restart/reload" >&2
 	echo "   -v: verbose mode" >&2
 	exit 1
 }
@@ -45,6 +46,7 @@ while getopts 'hrlRnv' opt; do
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
 		n) daemon_reload=false;;
+		N) show_failed=false;;
 		l) list=true;;
 		v) verbose=true;;
 		*) usage;;
@@ -57,6 +59,7 @@ shift $((OPTIND - 1));
 
 [[ $daemon_reload ]] || systemctl --system daemon-reload
 
+# list of running services
 declare -a services
 services=($(systemctl -t service --full|grep \.service|grep running|sed -rn 's/^(.*\.service).*/\1/p'))
 
@@ -79,3 +82,6 @@ for svc in "${services[@]}"; do
 		[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
 	fi
 done
+
+# show failed units
+[[ $systemd_cmd && $show_failed ]] && systemctl --failed --all
