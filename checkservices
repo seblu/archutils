@@ -19,6 +19,9 @@
 # Check running systemd services for binary update
 # Convenient way to restart updated systemd service after upgrade
 
+# disable grep options to avoid non default behaviour
+unset GREP_OPTIONS
+
 (( $UID != 0 )) && echo 'You need to be root' && exit 1
 
 if [[ -t 1 ]]; then
