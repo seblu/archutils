@@ -61,14 +61,15 @@ shift $((OPTIND - 1));
 [[ -z $no_reload ]] && systemctl --system daemon-reload
 
 # list of running services
+# don't use systemctl -s because require v206 of systemd. too young at the moment.
 declare -a services
-services=($(systemctl -t service --full|grep \.service|grep running|sed -rn 's/^(.*\.service).*/\1/p'))
+services=($(systemctl --no-legend --full -t service|grep running|sed -rn 's/^(.*\.service).*/\1/p'))
 
 # beggar count
 declare -a needy=()
 
 for svc in "${services[@]}"; do
-	pid=$(systemctl show "$svc"|sed -nr 's/^MainPID=(.*)/\1/p')
+	pid=$(systemctl -p MainPID show "$svc"|sed -nr 's/^MainPID=(.*)/\1/p')
 	deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 	if [[ -n $deleted ]]; then
 		needy+=("$svc")
