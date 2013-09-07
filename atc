@@ -16,17 +16,23 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-# firstly remove src and pkg directory to avoid find to go through
-find ${1:-.} -type d -a '(' -name 'src' -o -name 'pkg' ')' | while read -r d; do
-	base=$(dirname "$d")
-	[[ -r "$base/PKGBUILD" ]] && echo "$d" && 'rm' -r "$d"
-done
+# default dir is .
+(( $# == 0 )) && set -- '.'
 
-find ${1:-.} \( -name '*.pkg.tar.xz' \
-       -o -name '*.pkg.tar.xz.sig' \
-       -o -name '*.src.tar.gz' \
-       -o -name '*.log' \
-       -o -name 'svn-commit.tmp' \
-       \) -delete -print
+for dir; do
+  [[ ! -d $dir ]]  && echo "$dir is not a directory, skipping" >&2 && continue
+  # firstly remove src and pkg directory to avoid find to go through
+  find "$dir" -type d -a '(' -name 'src' -o -name 'pkg' ')' | while read -r d; do
+    base=$(dirname "$d")
+    [[ -r "$base/PKGBUILD" ]] && echo "$d" && 'rm' -r "$d"
+  done
+
+  find "$dir" \( -name '*.pkg.tar.xz' \
+         -o -name '*.pkg.tar.xz.sig' \
+         -o -name '*.src.tar.gz' \
+         -o -name '*.log' \
+         -o -name 'svn-commit.tmp' \
+         \) -delete -print
+done
 
 # vim:set ts=2 sw=2 ft=sh et:
