@@ -18,6 +18,8 @@
 
 (( $# < 1 )) && echo "usage: ${0##*/} <pkgsource> [pkgsource]..." >&2 && exit 1
 
+umask 0022
+
 for pkg; do
   [[ -e "$pkg.tar.gz" ]] && echo "$pkg.tar.gz already exists. skipped!" >&2 && continue
 	wget "http://aur.archlinux.org/packages/${pkg:0:2}/$pkg/$pkg.tar.gz" || continue
