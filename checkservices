@@ -57,6 +57,9 @@ done
 shift $((OPTIND - 1));
 (( $# > 0 )) && usage
 
+# avoid to be sighup'ed by interactive shell
+trap '' SIGHUP
+
 # reload units list
 [[ -z $no_reload ]] && systemctl --system daemon-reload
 
