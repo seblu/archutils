@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-(( $# < 1 )) && echo "usage: ${0##*/} <pkgsource> [pkgsource]..." >&2
+(( $# < 1 )) && echo "usage: ${0##*/} <pkgsource> [pkgsource]..." >&2 && exit 1
 
 for pkg; do
   [[ -e "$pkg.tar.gz" ]] && echo "$pkg.tar.gz already exists. skipped!" >&2 && continue
