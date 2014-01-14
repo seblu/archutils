@@ -70,10 +70,15 @@ services=($(systemctl --no-legend --full -t service|grep running|sed -rn 's/^(.*
 
 # beggar count
 declare -a needy=()
+declare -i pid=0
 
 for svc in "${services[@]}"; do
 	pid=$(systemctl -p MainPID show "$svc"|sed -nr 's/^MainPID=(.*)/\1/p')
 	deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
+	if ! (( $pid > 0 )); then
+		echo "** Unable to get pid ($pid) of $svc" >&2
+		continue
+	fi
 	if [[ -n $deleted ]]; then
 		needy+=("$svc")
 		if [[ $verbose ]]; then
