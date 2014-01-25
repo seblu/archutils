@@ -22,6 +22,9 @@
 # disable grep options to avoid non default behaviour
 unset GREP_OPTIONS
 
+# Systemd cgroup path
+systemd_cgroup_base_path='/sys/fs/cgroup/systemd'
+
 (( $UID != 0 )) && echo 'You need to be root' && exit 1
 
 if [[ -t 1 ]]; then
@@ -39,17 +42,19 @@ usage() {
 	echo '   -R: reload services' >&2
 	echo "   -n: don't call systemd daemon-reload" >&2
 	echo "   -N: don't display status of restart/reload units" >&2
+	echo "   -u: list service in users slice" >&2
 	echo "   -v: verbose mode" >&2
 	exit 1
 }
 
-while getopts 'hrRnNv' opt; do
+while getopts 'hrRnNuv' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
 		n) no_reload=1;;
 		N) no_status=1;;
 		l) list=true;;
+		u) user_slice=true;;
 		v) verbose=true;;
 		*) usage;;
 	esac
@@ -69,32 +74,39 @@ declare -a services
 services=($(systemctl --no-legend --full -t service|grep running|sed -rn 's/^(.*\.service).*/\1/p'))
 
 # beggar count
-declare -a needy=()
+declare -a needy=() pids=()
 declare -i pid=0
 
 for svc in "${services[@]}"; do
-	pid=$(systemctl -p MainPID show "$svc"|sed -nr 's/^MainPID=(.*)/\1/p')
-	deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
-	if ! (( $pid > 0 )); then
-		echo "** Unable to get pid ($pid) of $svc" >&2
+	unit_path=$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)
+	# check if unit is in system slice
+	[[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
+	pids=( $(< "$systemd_cgroup_base_path/$unit_path/tasks") )
+	if (( "${#pids[*]}" == 0 )); then
+		echo "** Unable to get pid of $svc" >&2
 		continue
 	fi
-	if [[ -n $deleted ]]; then
-		needy+=("$svc")
-		if [[ $verbose ]]; then
-			echo "${c_title}Service:${c_svc} $svc${c_rst}"
-			echo "${c_title}Pid:${c_rst} $pid"
-			echo "${c_title}Commands:${c_rst}"
-			echo "systemctl reload '$svc'"
-			echo "systemctl restart '$svc'"
-			echo "${c_title}Deleted files:${c_rst}"
-			echo "$deleted"
-			echo
-		else
-			echo "systemctl restart '$svc'"
+	deleted=''
+	for pid in "${pids[@]}"; do
+		deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
+		if [[ -n $deleted ]]; then
+			needy+=("$svc")
+			if [[ $verbose ]]; then
+				echo "${c_title}Service:${c_svc} $svc${c_rst}"
+				echo "${c_title}Pid:${c_rst} $pid"
+				echo "${c_title}Commands:${c_rst}"
+				echo "systemctl reload '$svc'"
+				echo "systemctl restart '$svc'"
+				echo "${c_title}Deleted files:${c_rst}"
+				echo "$deleted"
+				echo
+			else
+				echo "systemctl restart '$svc'"
+			fi
+			[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
+			break
 		fi
-		[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
-	fi
+	done
 done
 wait
 
