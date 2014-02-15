@@ -40,6 +40,7 @@ usage() {
 	echo '   -h: this help' >&2
 	echo '   -r: restart services' >&2
 	echo '   -R: reload services' >&2
+	echo "   -s: serialize action" >&2
 	echo "   -n: don't call systemd daemon-reload" >&2
 	echo "   -N: don't display status of restart/reload units" >&2
 	echo "   -u: list service in users slice" >&2
@@ -47,10 +48,11 @@ usage() {
 	exit 1
 }
 
-while getopts 'hrRnNuv' opt; do
+while getopts 'hrRsnNuv' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
+		s) serial=true;;
 		n) no_reload=1;;
 		N) no_status=1;;
 		l) list=true;;
@@ -103,7 +105,13 @@ for svc in "${services[@]}"; do
 			else
 				echo "systemctl restart '$svc'"
 			fi
-			[[ $systemd_cmd ]] && { systemctl "$systemd_cmd" "$svc" & }
+			if [[ $systemd_cmd ]]; then
+				systemctl "$systemd_cmd" "$svc" &
+				# wait process to terminate when serialize
+				[[ -n $serial ]] && wait
+				# display status directly when not serialize
+				[[ -n $serial && -z $no_status ]] && systemctl --lines=0 status "$svc"
+			fi
 			break
 		fi
 	done
@@ -111,7 +119,7 @@ done
 wait
 
 # show units status
-if [[ -z $no_status && $systemd_cmd && ${needy[*]} ]]; then
+if [[ -z $serial && -z $no_status && $systemd_cmd && ${needy[*]} ]]; then
 	systemctl --lines=0 status "${needy[@]}"
 fi
 
