@@ -16,4 +16,4 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-ssh nymeria.archlinux.org /srv/repos/svn-community/dbscripts/db-update
+ssh nymeria.archlinux.org '/srv/repos/svn-packages/dbscripts/db-update; /srv/repos/svn-community/dbscripts/db-update;'
