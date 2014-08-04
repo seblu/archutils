@@ -30,6 +30,29 @@ usage() {
 	exit 1
 }
 
+sshinit() {
+	# default ssh program
+	SSH=ssh
+	SCP=scp
+	if [[ -n $SSH_AUTH_SOCK ]] && ssh-add -l &>/dev/null; then
+		# we using ssh-agent
+		true
+	elif type -P sshpass &>/dev/null; then
+		printf "%s 's password: " "$pkg_host"
+		read -rs SSHPASS
+		echo
+		if [[ -z "$SSHPASS" ]]; then
+			echo 'Empty pass, sshpass not needed'
+			return
+		fi
+		export SSHPASS
+		SSH='sshpass -e ssh'
+		SCP='sshpass -e scp'
+	else
+		echo 'Nor ssh-agent, nor sshpass detected. You wil tap your pass more than once.'
+	fi
+}
+
 while getopts 'h:b:a:' opt; do
 	case $opt in
 		a) arch_regexp=$OPTARG;;
@@ -49,13 +72,19 @@ esac
 
 pkg_regex="$2"
 
+sshinit
+
 list_tmp=$(mktemp)
-ssh "$pkg_host" \
+$SSH "$pkg_host" \
 "find '$pkg_base' -type f \
 -regextype posix-egrep -regex '.*/$pkg_regex.*-$arch_regexp.pkg\.tar\.xz'" \
 </dev/null >"$list_tmp" 2>/dev/null
-exec 3<>"$list_tmp"
+if (( $? != 0 )); then
+	echo 'Unable to list remote files. Check your password!'
+	exit 1
+fi
 
+exec 3<>"$list_tmp"
 while read -u 3 -r line; do
 	[[ $line ]] || continue
 	case $action in
@@ -65,12 +94,12 @@ while read -u 3 -r line; do
 	get)
 		[[ -f $(basename $line) ]] &&
 			echo "==> $(basename $line): already exists. skipped!" && continue
-		scp "$pkg_host:$line" .
+		$SCP "$pkg_host:$line" .
 		;;
 	install)
 		(( EUID == 0 )) && pacman='pacman' || pacman='sudo pacman'
 		pkg_tmp=$(mktemp)
-		scp "$pkg_host:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
+		$SCP "$pkg_host:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
 		rm -f "$pkg_tmp"
 		;;
 	esac
