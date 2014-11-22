@@ -16,17 +16,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-pkg_host='seblu@white.seblu.net'
-pkg_base='.'
-pkg_regex=''
-arch_regexp="($(uname -m)|any)"
+PKG_HOST='seblu@white.seblu.net'
+PKG_BASE='packages'
+PKG_REGEX=''
+ARCH_REGEX="($(uname -m)|any)"
+SSH_OPTIONS=('-v' '-oStrictHostKeyChecking=no' '-oUserKnownHostsFile=/dev/null')
 
 usage() {
-	echo "usage: ${0##*/} [options] <list|get|install> [pkg_regex]" >&2
+	echo "usage: ${0##*/} [options] <list|get|install> [PKG_REGEX]" >&2
 	echo 'options:' >&2
-	echo "   -h: host address (current: $pkg_host)" >&2
-	echo "   -b: base path (current: $pkg_base)" >&2
-	echo "   -a: arch regex (current: $arch_regexp)" >&2
+	echo "   -h: host address (current: $PKG_HOST)" >&2
+	echo "   -b: base path (current: $PKG_BASE)" >&2
+	echo "   -a: arch regex (current: $ARCH_REGEX)" >&2
 	exit 1
 }
 
@@ -38,7 +39,7 @@ sshinit() {
 		# we using ssh-agent
 		true
 	elif type -P sshpass &>/dev/null; then
-		printf "%s 's password: " "$pkg_host"
+		printf "%s 's password: " "$PKG_HOST"
 		read -rs SSHPASS
 		echo
 		if [[ -z "$SSHPASS" ]]; then
@@ -55,9 +56,9 @@ sshinit() {
 
 while getopts 'h:b:a:' opt; do
 	case $opt in
-		a) arch_regexp=$OPTARG;;
-		b) pkg_base=$OPTARG;;
-		h) pkg_host=$OPTARG;;
+		a) ARCH_REGEX=$OPTARG;;
+		b) PKG_BASE=$OPTARG;;
+		h) PKG_HOST=$OPTARG;;
 		*) usage;;
 	esac
 done
@@ -66,18 +67,19 @@ shift $((OPTIND - 1));
 (( $# >= 1 )) || usage
 
 case $1 in
-	list|get|install) action="$1";;
-	*) usage;;
+	list|get|install) action="$1"; shift;;
+	*) action='get';;
 esac
 
-pkg_regex="$2"
+
+PKG_REGEX="$1"
 
 sshinit
 
 list_tmp=$(mktemp)
-$SSH "$pkg_host" \
-"find '$pkg_base' -type f \
--regextype posix-egrep -regex '.*/$pkg_regex.*-$arch_regexp.pkg\.tar\.xz'" \
+$SSH "${SSH_OPTIONS[@]}" "$PKG_HOST" \
+"find '$PKG_BASE' -type f \
+-regextype posix-egrep -regex '.*/$PKG_REGEX.*-$ARCH_REGEX.pkg\.tar\.xz'" \
 </dev/null >"$list_tmp" 2>/dev/null
 if (( $? != 0 )); then
 	echo 'Unable to list remote files. Check your password!'
@@ -94,12 +96,12 @@ while read -u 3 -r line; do
 	get)
 		[[ -f $(basename $line) ]] &&
 			echo "==> $(basename $line): already exists. skipped!" && continue
-		$SCP "$pkg_host:$line" .
+		$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" .
 		;;
 	install)
 		(( EUID == 0 )) && pacman='pacman' || pacman='sudo pacman'
 		pkg_tmp=$(mktemp)
-		$SCP "$pkg_host:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
+		$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
 		rm -f "$pkg_tmp"
 		;;
 	esac
