@@ -16,16 +16,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-PKG_HOST='seblu@white.seblu.net'
+PKG_HOSTS=('seblu@white.seblu.net' 'seblu@white.h.seblu.net' 'seblu@white.v.seblu.net')
 PKG_BASE='packages'
 PKG_REGEX=''
 ARCH_REGEX="($(uname -m)|any)"
-SSH_OPTIONS=('-v' '-oStrictHostKeyChecking=no' '-oUserKnownHostsFile=/dev/null')
+SSH_OPTIONS=('-oStrictHostKeyChecking=no' '-oUserKnownHostsFile=/dev/null')
 
 usage() {
 	echo "usage: ${0##*/} [options] <list|get|install> [PKG_REGEX]" >&2
 	echo 'options:' >&2
-	echo "   -h: host address (current: $PKG_HOST)" >&2
+	echo "   -h: host address (current: ${PKG_HOSTS[*]})" >&2
 	echo "   -b: base path (current: $PKG_BASE)" >&2
 	echo "   -a: arch regex (current: $ARCH_REGEX)" >&2
 	exit 1
@@ -50,7 +50,7 @@ sshinit() {
 		SSH='sshpass -e ssh'
 		SCP='sshpass -e scp'
 	else
-		echo 'Nor ssh-agent, nor sshpass detected. You wil tap your pass more than once.'
+		echo 'Nor ssh-agent, nor sshpass detected. You wil tap your pass more than twice.'
 	fi
 }
 
@@ -58,7 +58,7 @@ while getopts 'h:b:a:' opt; do
 	case $opt in
 		a) ARCH_REGEX=$OPTARG;;
 		b) PKG_BASE=$OPTARG;;
-		h) PKG_HOST=$OPTARG;;
+		h) PKG_HOSTS=$OPTARG;;
 		*) usage;;
 	esac
 done
@@ -74,38 +74,48 @@ esac
 
 PKG_REGEX="$1"
 
-sshinit
-
 list_tmp=$(mktemp)
-$SSH "${SSH_OPTIONS[@]}" "$PKG_HOST" \
-"find '$PKG_BASE' -type f \
--regextype posix-egrep -regex '.*/$PKG_REGEX.*-$ARCH_REGEX.pkg\.tar\.xz'" \
-</dev/null >"$list_tmp" 2>/dev/null
-if (( $? != 0 )); then
-	echo 'Unable to list remote files. Check your password!'
-	exit 1
-fi
 
-exec 3<>"$list_tmp"
-while read -u 3 -r line; do
-	[[ $line ]] || continue
-	case $action in
-	list)
-		echo "$line"
-		;;
-	get)
-		[[ -f $(basename $line) ]] &&
-			echo "==> $(basename $line): already exists. skipped!" && continue
-		$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" .
-		;;
-	install)
-		(( EUID == 0 )) && pacman='pacman' || pacman='sudo pacman'
-		pkg_tmp=$(mktemp)
-		$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
-		rm -f "$pkg_tmp"
-		;;
-	esac
+for PKG_HOST in "${PKG_HOSTS[@]}"; do
+	echo "Connection to $PKG_HOST"
+
+	sshinit
+
+	$SSH "${SSH_OPTIONS[@]}" "$PKG_HOST" "find '$PKG_BASE' -type f \
+	-regextype posix-egrep -regex '.*/$PKG_REGEX.*-$ARCH_REGEX.pkg\.tar\.xz'" \
+	</dev/null >"$list_tmp" 2>/dev/null
+
+	if [[ -s "$list_tmp" || $? -eq 0 ]]; then
+		break
+	else
+		echo 'Connection failed or return an unexpected value'
+	fi
 done
+
+if [[ -s "$list_tmp" ]]; then
+	exec 3<>"$list_tmp"
+	while read -u 3 -r line; do
+		[[ $line ]] || continue
+	case $action in
+		list)
+			echo "$line"
+			;;
+		get)
+			[[ -f $(basename $line) ]] &&
+				echo "==> $(basename $line): already exists. skipped!" && continue
+			$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" .
+			;;
+		install)
+			(( EUID == 0 )) && pacman='pacman' || pacman='sudo pacman'
+			pkg_tmp=$(mktemp)
+			$SCP "${SSH_OPTIONS[@]}" "$PKG_HOST:$line" "$pkg_tmp" && $pacman -U "$pkg_tmp"
+			rm -f "$pkg_tmp"
+			;;
+		esac
+	done
+else
+	echo 'No match found'
+fi
 
 rm -f "$list_tmp"
 
