@@ -20,6 +20,7 @@
 
 shopt -s nullglob
 
+(( UID > 0 )) && { echo "You must be root" >&2; exit 1; }
 type -P kexec >/dev/null || { echo "kexec is not in PATH" >&2; exit 1; }
 [[ -r /boot ]] || { echo "Unable to read /boot" >&2; exit 1; }
 
