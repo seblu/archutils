@@ -71,9 +71,8 @@ trap '' SIGHUP
 [[ -z $no_reload ]] && systemctl --system daemon-reload
 
 # list of running services
-# don't use systemctl -s because require v206 of systemd. too young at the moment.
 declare -a services
-services=($(systemctl --no-legend --full -t service|grep running|sed -rn 's/^(.*\.service).*/\1/p'))
+services=($(systemctl --no-legend --full --type service --state running|cut -f1 -d' '))
 
 # beggar count
 declare -a needy=() pids=()
