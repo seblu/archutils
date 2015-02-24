@@ -31,6 +31,7 @@ if [[ -t 1 ]]; then
 	shopt -s xpg_echo
 	c_title='\e[1;33m'
 	c_svc='\e[1;31m'
+	c_warn='\e[5;30;43m'
 	c_rst='\e[m'
 fi
 
@@ -139,6 +140,11 @@ wait
 # show units status
 if [[ -z $serial && -z $no_status && $systemd_cmd && ${needy[*]} ]]; then
 	systemctl --lines=0 status "${needy[@]}"
+fi
+
+# warn if dbus was restart
+if in_array dbus.service "${needy[@]}"; then
+	echo "${c_warn}You should always run ${0##*/} twice after a dbus restart${c_rst}"
 fi
 
 if [[ $verbose ]]; then
