@@ -48,6 +48,18 @@ usage() {
 	exit 1
 }
 
+# usage : in_array( $needle, $haystack )
+# return : 0 - found
+#          1 - not found
+in_array() {
+	local needle=$1; shift
+	local item
+	for item in "$@"; do
+	   [[ $item = $needle ]] && return 0 # Found
+	done
+	return 1 # Not Found
+}
+
 while getopts 'hrRsnNuv' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
@@ -74,12 +86,16 @@ trap '' SIGHUP
 declare -a services
 services=($(systemctl --no-legend --full --type service --state running|cut -f1 -d' '))
 
+# list of bus names
+buses=($(dbus-send --system --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames|sed -rn 's/\s*string "(.*)"/\1/p'))
+
 # beggar count
 declare -a needy=() pids=()
 declare -i pid=0
 
 for svc in "${services[@]}"; do
 	unit_path=$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)
+	busname=$(systemctl -p BusName show "$svc"|cut -f 2 -d=)
 	# check if unit is in system slice
 	[[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
 	pids=( $(< "$systemd_cgroup_base_path/$unit_path/tasks") )
@@ -90,14 +106,17 @@ for svc in "${services[@]}"; do
 	deleted=''
 	for pid in "${pids[@]}"; do
 		deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
-		if [[ -n $deleted ]]; then
+		if [[ -n $deleted ]] || { [[ -n "$busname" ]] && ! in_array "$busname" "${buses[@]}"; }; then
 			needy+=("$svc")
 			if [[ $verbose ]]; then
 				echo "${c_title}Service:${c_svc} $svc${c_rst}"
 				echo "${c_title}Pid:${c_rst} $pid"
+				echo "${c_title}Bus:${c_rst} $busname"
 				echo "${c_title}Commands:${c_rst}"
 				echo "systemctl reload '$svc'"
 				echo "systemctl restart '$svc'"
+				echo -n "${c_title}BusName on the system bus: ${c_rst}"
+				in_array "$busname" "${buses[@]}" && echo 'Yes' || echo 'No'
 				echo "${c_title}Deleted files:${c_rst}"
 				echo "$deleted"
 				echo
