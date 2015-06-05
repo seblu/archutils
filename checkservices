@@ -95,8 +95,8 @@ declare -a needy=() pids=()
 declare -i pid=0
 
 for svc in "${services[@]}"; do
-	unit_path=$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)
-	busname=$(systemctl -p BusName show "$svc"|cut -f 2 -d=)
+	unit_path="$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)"
+	busname="$(systemctl -p BusName show "$svc"|cut -f 2 -d=)"
 	# check if unit is in system slice
 	[[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
 	pids=( $(< "$systemd_cgroup_base_path/$unit_path/tasks") )
