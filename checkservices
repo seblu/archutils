@@ -142,15 +142,20 @@ if [[ -z $serial && -z $no_status && $systemd_cmd && ${needy[*]} ]]; then
 	systemctl --lines=0 status "${needy[@]}"
 fi
 
-# warn if dbus was restart
-if in_array dbus.service "${needy[@]}"; then
-	echo "${c_warn}You should always run ${0##*/} twice after a dbus restart${c_rst}"
-fi
-
 if [[ $verbose ]]; then
 	systemctl --failed --all --no-pager --full list-units
 else
 	systemctl --failed --all --no-pager --no-legend --full list-units
+fi
+
+# warn if dbus was restart
+if in_array dbus.service "${needy[@]}"; then
+	echo "${c_warn}After dbus restart, you should run ${0##*/} twice${c_rst}"
+	if [[ -n "$systemd_cmd" && -z $CHECKSERVICE_WAS_RESTARTED ]]; then
+		echo "${c_warn}Doing it for you. No need to thanks me!${c_rst}"
+		export CHECKSERVICE_WAS_RESTARTED=1
+		exec "$0" "$@"
+	fi
 fi
 
 exit 0
