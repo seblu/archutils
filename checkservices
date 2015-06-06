@@ -25,7 +25,6 @@ unset GREP_OPTIONS
 # Systemd cgroup path
 systemd_cgroup_base_path='/sys/fs/cgroup/systemd'
 
-(( $UID != 0 )) && echo 'You need to be root' && exit 1
 
 if [[ -t 1 ]]; then
 	shopt -s xpg_echo
@@ -82,6 +81,9 @@ shift $((OPTIND - 1));
 
 # avoid to be sighup'ed by interactive shell
 trap '' SIGHUP
+
+# from now, we need to be root
+(( $UID != 0 )) && echo 'You need to be root' && exit 1
 
 # call pacdiff
 [[ -z $no_pacdiff ]] && pacdiff
