@@ -20,6 +20,8 @@ package() {
     "$pkgdir/usr/bin"
   # install munin stuff
   install -m755 archlinux-{pacfiles,packages} "$pkgdir/usr/lib/munin/plugins"
+  # add shortcut, because i'm lazy
+  ln -s checkservices "$pkgdir/usr/bin/cs"
 }
 
 # vim:set ts=2 sw=2 et:
