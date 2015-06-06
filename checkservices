@@ -112,7 +112,12 @@ for svc in "${services[@]}"; do
 	fi
 	deleted=''
 	for pid in "${pids[@]}"; do
-		deleted=$(grep '(deleted)' "/proc/$pid/maps"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
+		maps_path="/proc/$pid/maps"
+		[[ -e "$maps_path" ]] || {
+			echo "${c_error}** Unable to get maps file of $svc for pid $pid${c_rst}" >&2
+			continue
+		}
+		deleted=$(grep '(deleted)' "$maps_path" |sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 		if [[ -n $deleted ]] || { [[ -n "$busname" ]] && ! in_array "$busname" "${buses[@]}"; }; then
 			needy+=("$svc")
 			if [[ $verbose ]]; then
