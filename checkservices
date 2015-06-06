@@ -43,6 +43,7 @@ usage() {
 	echo '   -r: restart services' >&2
 	echo '   -R: reload services' >&2
 	echo "   -s: serialize action" >&2
+	echo "   -p: don't call pacdiff before action" >&2
 	echo "   -n: don't call systemd daemon-reload" >&2
 	echo "   -N: don't display status of restart/reload units" >&2
 	echo "   -u: list service in users slice" >&2
@@ -62,13 +63,14 @@ in_array() {
 	return 1 # Not Found
 }
 
-while getopts 'hrRsnNuv' opt; do
+while getopts 'hrRsnNuvp' opt; do
 	case $opt in
 		r) systemd_cmd='restart';;
 		R) systemd_cmd='reload';;
 		s) serial=true;;
 		n) no_reload=1;;
 		N) no_status=1;;
+		p) no_pacdiff=1;;
 		l) list=true;;
 		u) user_slice=true;;
 		v) verbose=true;;
@@ -80,6 +82,9 @@ shift $((OPTIND - 1));
 
 # avoid to be sighup'ed by interactive shell
 trap '' SIGHUP
+
+# call pacdiff
+[[ -z $no_pacdiff ]] && pacdiff
 
 # reload units list
 [[ -z $no_reload ]] && systemctl --system daemon-reload
