@@ -124,7 +124,7 @@ for svc in "${services[@]}"; do
 			echo "${c_error}** Unable to get maps file of $svc for pid $pid${c_rst}" >&2
 			continue
 		}
-		deleted=$(grep '(deleted)' "$maps_path" |sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
+		deleted=$(grep -F '(deleted)' "$maps_path" |sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 		if [[ -n $deleted ]] || { [[ -n "$busname" ]] && ! in_array "$busname" "${buses[@]}"; }; then
 			needy+=("$svc")
 			if [[ $verbose ]]; then
