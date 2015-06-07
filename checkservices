@@ -170,10 +170,14 @@ done
 (( $restart == 0 || ${#needy[*]} == 0 ))  && exit 0
 
 # wait the timeout
-(( $timeout )) && {
+(( $timeout > 0 )) && {
 	echo "Waiting for ${timeout} seconds"
 	echo "Use ctrl+c to undo"
-	sleep $timeout
+	for i in $(seq $timeout -1 1); do
+		echo -n "$i..."
+		sleep 1
+	done
+	echo 0
 }
 
 # do the job, restart updated services
