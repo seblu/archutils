@@ -29,7 +29,7 @@ SYSTEMD_CGROUP_BASE_PATH='/sys/fs/cgroup/systemd'
 if [[ -t 1 ]]; then
 	shopt -s xpg_echo
 	c_title='\e[1;33m'
-	c_svc='\e[1;31m'
+	c_svc='\e[1;35m'
 	c_warn='\e[5;30;43m'
 	c_error='\e[5;30;41m'
 	c_rst='\e[m'
@@ -160,15 +160,17 @@ for svc in "${services[@]}"; do
 done
 
 # display what we will do
+(( "${#needy[*]}" )) && echo '-------8<-------------------------------8<---------'
 for svc in "${needy[@]}"; do
 	echo "systemctl restart '$svc'"
 done
+(( "${#needy[*]}" )) && echo '-------8<-------------------------------8<---------'
 
 # if nothing to restart we have done
 (( $restart == 0 || ${#needy[*]} == 0 ))  && exit 0
 
 # wait the timeout
-(( $timeout > 0 )) && {
+(( $timeout )) && {
 	echo "Waiting for ${timeout} seconds"
 	echo "Use Ctrl+C to undo"
 	sleep $timeout
@@ -176,8 +178,8 @@ done
 
 # do the job, restart updated services
 for svc in "${needy[@]}"; do
+	echo "Restarting ${c_svc}$svc${c_rst}"
 	systemctl restart "$svc" &
-	# wait process to terminate when serialize
 	(( $serialize )) && wait
 	# display status directly when serialize and not quiet
 	(( $serialize )) && (( $status )) && systemctl --lines=0 status "$svc"
