@@ -37,28 +37,31 @@ fi
 
 # default options
 dbus=1				# relauch when dbus
+debug=0				# debug mode
 failed=1			# display failed service at the end
 pacdiff=1 			# run pacdiff
 reload=1 			# reload systemd
+restart=1			# restart services (0: no, 1:yes, 2)
 serialize=0			# run in parallel
 status=1 			# display status after systemctl
-systemctl='' 		# systemctl command to call
+timeout=5			# timeout duration
 user_slice=0		# act on users services
-verbose=0			# more details
 
+# display application usage and exit 2
 usage() {
 	echo "usage ${0##*/} [options]"
 	echo "description: check for updated files in a service"
 	echo 'options:'
 	echo '  -h: this help' >&2
+	echo "  -t: timeout before restart (default: ${timeout}s)" >&2
+	echo "  -d: debug mode" >&2
 	echo "  -b/-B: restart (or not) ${0##*/} if dbus was updated (default: $dbus)" >&2
-	echo "  -d/-D: call (or not) systemd daemon-reload (default: $reload)" >&2
+	echo "  -l/-L: call (or not) systemd daemon-reload (default: $reload)" >&2
 	echo "  -f/-F: display (or not) failed services before quit (default: $failed)" >&2
 	echo "  -p/-P: call (or not) pacdiff before act (default: $pacdiff)" >&2
-	echo "  -r/-R: restart (or reload) services (default: $systemctl)" >&2
+	echo "  -r/-R: restart (or not) services with updated files (default: $restart)" >&2
 	echo "  -s/-S: display (or not) status of restarted service (default: $status)" >&2
 	echo "  -u/-U: act (or not) on services in users slice (default: $user_slice)" >&2
-	echo "  -v/-V: verbose mode (or disable it)" >&2
 	echo "  -z/-Z: serialize (or not) action (default: $serialize)" >&2
 	exit 2
 }
@@ -75,16 +78,17 @@ in_array() {
 	return 1 # Not Found
 }
 
-while getopts 'hBbDdFfPpRrSsUuVvZz' opt; do
+while getopts 'hBbdFfLlPpRrSst:UuZz' opt; do
 	case $opt in
 		B) dbus=0;; 			b) dbus=1;;
-		D) reload=0;;			d) reload=1;;
+		d) debug=1;;
 		F) failed=0;;			f) failed=1;;
+		L) reload=0;;			l) reload=1;;
 		P) pacdiff=0;;			p) pacdiff=1;;
-		R) systemctl='reload';; r) systemctl='restart';;
+		R) restart=0;; 			r) restart=1;;
 		S) status=0;;			s) status=1;;
+		t) timeout="$OPTARG";;
 		U) user_slice=0;;		u) user_slice=1;;
-		V) verbose=0;;			v) verbose=1;;
 		Z) serialize=0;;		z) serialize=1;;
 		*) usage;;
 	esac
@@ -99,10 +103,10 @@ trap '' SIGHUP
 (( $UID != 0 )) && echo 'You need to be root' && exit 1
 
 # call pacdiff
-(( pacdiff )) && pacdiff
+(( $pacdiff )) && pacdiff
 
 # reload units list
-(( reload )) && systemctl --system daemon-reload
+(( $reload )) && systemctl --system daemon-reload
 
 # list of running services
 declare -a services
@@ -110,12 +114,12 @@ services=($(systemctl --no-legend --full --type service --state running|cut -f1 
 
 # list of bus names
 declare -a buses
-buses=($(dbus-send --system --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames|sed -rn 's/\s*string "(.*)"/\1/p'))
+buses=($(dbus-send --system --dest=org.freedesktop.DBus --type=method_call \--print-reply \
+/org/freedesktop/DBus org.freedesktop.DBus.ListNames|sed -rn 's/\s*string "(.*)"/\1/p'))
 
-# beggar count
+# count beggar services
 declare -a needy=() pids=()
 declare -i pid=0
-
 for svc in "${services[@]}"; do
 	unit_path="$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)"
 	busname="$(systemctl -p BusName show "$svc"|cut -f 2 -d=)"
@@ -125,7 +129,7 @@ for svc in "${services[@]}"; do
 		continue
 	}
 	# check if unit is in system slice
-	(( user_slice )) && [[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
+	(( $user_slice )) && [[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
 	pids=( $(< "$SYSTEMD_CGROUP_BASE_PATH/$unit_path/tasks") )
 	if (( "${#pids[*]}" == 0 )); then
 		echo "${c_error}** Unable to get pid of $svc: Tasks file is empty${c_rst}" >&2
@@ -140,43 +144,57 @@ for svc in "${services[@]}"; do
 		deleted=$(grep -F '(deleted)' "$maps_path" |sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
 		if [[ -n $deleted ]] || { [[ -n "$busname" ]] && ! in_array "$busname" "${buses[@]}"; }; then
 			needy+=("$svc")
-			if (( verbose )); then
+			if (( $debug )); then
 				echo "${c_title}Service:${c_svc} $svc${c_rst}"
 				echo "${c_title}Pid:${c_rst} $pid"
 				echo "${c_title}Bus:${c_rst} $busname"
-				echo "${c_title}Commands:${c_rst} systemctl ${systemctl:-restart} '$svc'"
-				echo -n "${c_title}BusName detected on the system bus: ${c_rst}"
+				echo -n "${c_title}BusName matching on the system bus: ${c_rst}"
 				in_array "$busname" "${buses[@]}" && echo 'Yes' || echo 'No'
 				echo "${c_title}Deleted files:${c_rst}"
 				echo "$deleted"
 				echo
-			else
-				echo "systemctl ${systemctl:-restart} '$svc'"
-			fi
-			if [[ -n $systemctl ]]; then
-				systemctl "$systemctl" "$svc" &
-				# wait process to terminate when serialize
-				(( serialize )) && wait
-				# display status directly when serialize and not quiet
-				(( serialize )) && (( status )) && systemctl --lines=0 status "$svc"
 			fi
 			break
 		fi
 	done
 done
+
+# display what we will do
+for svc in "${needy[@]}"; do
+	echo "systemctl restart '$svc'"
+done
+
+# if nothing to restart we have done
+(( $restart == 0 || ${#needy[*]} == 0 ))  && exit 0
+
+# wait the timeout
+(( $timeout > 0 )) && {
+	echo "Waiting for ${timeout} seconds"
+	echo "Use Ctrl+C to undo"
+	sleep $timeout
+}
+
+# do the job, restart updated services
+for svc in "${needy[@]}"; do
+	systemctl restart "$svc" &
+	# wait process to terminate when serialize
+	(( $serialize )) && wait
+	# display status directly when serialize and not quiet
+	(( $serialize )) && (( $status )) && systemctl --lines=0 status "$svc"
+done
 wait
 
 # show units status
-if (( serialize == 0 )) && (( status )) && [[ -n $systemctl && -n ${needy[*]} ]]; then
+if (( $serialize == 0 )) && (( $status )) && [[ -n $systemctl && -n ${needy[*]} ]]; then
 	systemctl --lines=0 status "${needy[@]}"
 fi
 
-(( failed )) && systemctl --failed --all --no-pager --no-legend --full list-units
+(( $failed )) && systemctl --failed --all --no-pager --no-legend --full list-units
 
 # warn if dbus was restart
 if in_array dbus.service "${needy[@]}"; then
 	echo "${c_warn}After dbus restart, you should run ${0##*/} twice${c_rst}" >&2
-	if (( dbus )) && [[ -n $systemctl && -z $CHECKSERVICE_WAS_RESTARTED ]]; then
+	if (( $dbus )) && [[ -n $systemctl && -z $CHECKSERVICE_WAS_RESTARTED ]]; then
 		echo "${c_warn}Doing it for you. No need to thanks me!${c_rst}" >&2
 		export CHECKSERVICE_WAS_RESTARTED=1
 		exec "$0" "$@"
