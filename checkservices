@@ -172,7 +172,7 @@ done
 # wait the timeout
 (( $timeout )) && {
 	echo "Waiting for ${timeout} seconds"
-	echo "Use Ctrl+C to undo"
+	echo "Use ctrl+c to undo"
 	sleep $timeout
 }
 
