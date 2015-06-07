@@ -129,7 +129,7 @@ for svc in "${services[@]}"; do
 		continue
 	}
 	# check if unit is in system slice
-	(( $user_slice )) && [[ "$unit_path" =~ /user\.slice/ && ! "$user_slice" == true ]] && continue
+	(( $user_slice == 0 )) && [[ "$unit_path" =~ /user\.slice/ ]] && continue
 	pids=( $(< "$SYSTEMD_CGROUP_BASE_PATH/$unit_path/tasks") )
 	if (( "${#pids[*]}" == 0 )); then
 		echo "${c_error}** Unable to get pid of $svc: Tasks file is empty${c_rst}" >&2
