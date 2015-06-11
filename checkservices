@@ -41,7 +41,7 @@ debug=0				# debug mode
 failed=1			# display failed service at the end
 pacdiff=1 			# run pacdiff
 reload=1 			# reload systemd
-restart=1			# restart services (0: no, 1:yes, 2)
+restart=1			# restart services
 serialize=0			# run in parallel
 status=1 			# display status after systemctl
 timeout=5			# timeout duration
@@ -167,7 +167,7 @@ done
 (( "${#needy[*]}" )) && echo '-------8<-------------------------------8<---------'
 
 # if nothing to restart we have done
-(( $restart == 0 || ${#needy[*]} == 0 ))  && exit 0
+(( $restart == 0 || ${#needy[*]} == 0 )) && exit 0
 
 # wait the timeout
 (( $timeout > 0 )) && {
@@ -191,7 +191,7 @@ done
 wait
 
 # show units status
-if (( $serialize == 0 )) && (( $status )) && [[ -n $systemctl && -n ${needy[*]} ]]; then
+if (( $serialize == 0 )) && (( $status )); then
 	systemctl --lines=0 status "${needy[@]}"
 fi
 
@@ -200,7 +200,7 @@ fi
 # warn if dbus was restart
 if in_array dbus.service "${needy[@]}"; then
 	echo "${c_warn}After dbus restart, you should run ${0##*/} twice${c_rst}" >&2
-	if (( $dbus )) && [[ -n $systemctl && -z $CHECKSERVICE_WAS_RESTARTED ]]; then
+	if (( $dbus )) && [[ -z "$CHECKSERVICE_WAS_RESTARTED" ]]; then
 		echo "${c_warn}Doing it for you. No need to thanks me!${c_rst}" >&2
 		export CHECKSERVICE_WAS_RESTARTED=1
 		exec "$0" "$@"
