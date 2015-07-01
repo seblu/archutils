@@ -9,6 +9,8 @@ url='https://github.com/seblu/archutils'
 license=('GPL2')
 depends=('python' 'bash' 'file' 'grep')
 provides=('kernel-reinstall')
+replaces=('kernel-reinstall')
+conflicts=('kernel-reinstall')
 
 package() {
   cd "$startdir"
