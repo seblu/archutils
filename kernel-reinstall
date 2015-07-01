@@ -1,15 +1,38 @@
 #!/bin/bash
 
+# Copyright © Sébastien Luttringer
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+# Check running systemd services for binary update
+# Convenient way to restart updated systemd service after upgrade
+
+# from now, we need to be root
+(( $UID != 0 )) && echo 'You need to be root' && exit 1
+
 read machineid < /etc/machine-id
+echo "Your machine-id is $machineid"
 
 cd "/usr/lib/kernel"
 
-for _k in vmlinuz-*; do
+for _k in *; do
 	[[ -d "$_k" ]] && continue
-	ver=${_k#vmlinuz-}
+	file -b "$_k" | grep -q "^Linux kernel" || continue
+	ver=${_k#*-}
 	if [[ -d "/boot/$machineid/$ver" ]]; then
 		kernel-install remove "$ver"
 	fi
 	kernel-install add "$ver" "/usr/lib/kernel/$_k"
 done
-

@@ -7,7 +7,7 @@ pkgdesc='Seblu Archlinux Utils'
 arch=('any')
 url='https://github.com/seblu/archutils'
 license=('GPL2')
-depends=('python' 'bash')
+depends=('python' 'bash' 'file' 'grep')
 provides=('kernel-reinstall')
 
 package() {
