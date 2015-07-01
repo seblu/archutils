@@ -1,0 +1,15 @@
+#!/bin/bash
+
+read machineid < /etc/machine-id
+
+cd "/usr/lib/kernel"
+
+for _k in vmlinuz-*; do
+	[[ -d "$_k" ]] && continue
+	ver=${_k#vmlinuz-}
+	if [[ -d "/boot/$machineid/$ver" ]]; then
+		kernel-install remove "$ver"
+	fi
+	kernel-install add "$ver" "/usr/lib/kernel/$_k"
+done
+
