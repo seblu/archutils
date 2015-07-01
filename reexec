@@ -16,15 +16,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-# Easy kexec
+# kexec for dummies
 
 (( UID > 0 )) && { echo "You must be root" >&2; exit 1; }
 whence -p kexec >/dev/null || { echo "kexec is not in PATH" >&2; exit 1; }
 [[ -r /boot ]] || { echo "Unable to read /boot" >&2; exit 1; }
 
-select kernel in /boot/vmlinuz-*(om); do
-	if [[ -e /boot/initramfs-${kernel##*vmlinuz-}.img ]]; then
-		initrd="--initrd=/boot/initramfs-${kernel##*vmlinuz-}.img"
+read machineid < /etc/machine-id
+
+kernels=( /boot/vmlinuz-*(Nom) /boot/"$machineid"/*/linux(Nom) )
+(( ${#kernels[@]} > 0 )) || { echo "No kernel found." >&2; exit 2; }
+
+select kernel in "${kernels[@]}"; do
+	if [[ -e /boot/initramfs-${kernel#*-}.img ]]; then
+		initrd="--initrd=/boot/initramfs-${kernel#*-}.img"
 	fi
 	kexec -l --reuse-cmdline "$initrd" "$kernel"
 	systemctl kexec
