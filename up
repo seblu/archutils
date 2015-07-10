@@ -21,9 +21,9 @@
 # We need to be root
 if (( $UID != 0 )); then
 	if type -P sudo >/dev/null; then
-		sudo -- "$0" "$@"
+		exec sudo -- "$0" "$@"
 	elif type -P su >/dev/null; then
-		su -l -c "$0" "$@"
+		exec su -l -c "$0" "$@"
 	fi
 	echo 'You need to be root'
 	exit 1
