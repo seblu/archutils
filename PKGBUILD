@@ -18,13 +18,14 @@ package() {
   # install legal stuff
   install -m644 COPYRIGHT LICENSE "$pkgdir/usr/share/licenses/$pkgname"
   # install binaries
-  install -m755 up atc aurdown go2chroot addpkg sign getpkg pkgbuild2json \
+  install -m755 atc aurdown go2chroot addpkg sign getpkg pkgbuild2json \
     tmpmakepkg reinstallpkgs checkservices bindeps archlinux-update reexec \
-    kernel-reinstall "$pkgdir/usr/bin"
+    kernel-reinstall system-upgrade "$pkgdir/usr/bin"
   # install munin stuff
   install -m755 archlinux-{pacfiles,packages} "$pkgdir/usr/lib/munin/plugins"
   # add shortcut, because i'm lazy
   ln -s checkservices "$pkgdir/usr/bin/cs"
+  ln -s system-upgrade "$pkgdir/usr/bin/sup"
 }
 
 # vim:set ts=2 sw=2 et:
