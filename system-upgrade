@@ -29,6 +29,6 @@ if (( $UID != 0 )); then
 	exit 1
 fi
 
-pacman --sync --refresh --sysupgrade
+pacman --sync --refresh --sysupgrade "$@"
 
 checkservices
