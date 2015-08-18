@@ -28,8 +28,13 @@ kernels=( /boot/vmlinuz-*(Nom) /boot/"$machineid"/*/linux(Nom) )
 (( ${#kernels[@]} > 0 )) || { echo "No kernel found." >&2; exit 2; }
 
 select kernel in "${kernels[@]}"; do
-	if [[ -e /boot/initramfs-${kernel#*-}.img ]]; then
+	if [[ -e "${kernel%/linux*}/initrd" ]]; then
+		initrd="--initrd=${kernel%/linux*}/initrd"
+	elif [[ -e "${kernel%/vmlinuz*}/initramfs${kernel##*/vmlinuz}.img" ]]; then
 		initrd="--initrd=/boot/initramfs-${kernel#*-}.img"
+	else
+		echo 'No initrd detected. Press a key to continue?'
+		read key
 	fi
 	kexec -l --reuse-cmdline "$initrd" "$kernel"
 	systemctl kexec
