@@ -18,13 +18,15 @@
 
 # kexec for dummies
 
+BOOT_DIR="${BOOT_DIR:-/boot}"
+
 (( UID > 0 )) && { echo "You must be root" >&2; exit 1; }
 whence -p kexec >/dev/null || { echo "kexec is not in PATH" >&2; exit 1; }
-[[ -r /boot ]] || { echo "Unable to read /boot" >&2; exit 1; }
+[[ -r "$BOOT_DIR" ]] || { echo "Unable to read $BOOT_DIR" >&2; exit 1; }
 
 read machineid < /etc/machine-id
 
-kernels=( /boot/vmlinuz-*(Nom) /boot/"$machineid"/*/linux(Nom) )
+kernels=( "$BOOT_DIR"/vmlinuz*(Nom) "$BOOT_DIR/$machineid"/*/linux(Nom) )
 (( ${#kernels[@]} > 0 )) || { echo "No kernel found." >&2; exit 2; }
 
 select kernel in "${kernels[@]}"; do
