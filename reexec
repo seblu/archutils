@@ -38,7 +38,10 @@ select kernel in "${kernels[@]}"; do
 		echo 'No initrd detected. Press a key to continue?'
 		read key
 	fi
-	kexec -l --reuse-cmdline "$initrd" "$kernel"
+	if ! kexec -l --reuse-cmdline "$initrd" "$kernel"; then
+		printf '\e[1;31mUnable to load kernel/initrd\e[0m\n' >&2
+		exit 42
+	fi
 	systemctl kexec
 	break
 done
