@@ -16,13 +16,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
+AUR_URL='https://aur.archlinux.org/cgit/aur.git/snapshot'
+
 (( $# < 1 )) && echo "usage: ${0##*/} <pkgsource> [pkgsource]..." >&2 && exit 1
 
 umask 0022
 
 for pkg; do
   [[ -e "$pkg.tar.gz" ]] && echo "$pkg.tar.gz already exists. skipped!" >&2 && continue
-	wget "http://aur.archlinux.org/packages/${pkg:0:2}/$pkg/$pkg.tar.gz" || continue
+	wget "$AUR_URL/$pkg.tar.gz" || continue
   tar -xvv --no-same-owner --no-same-permissions -f "$pkg.tar.gz"
   (( $UID == 0 )) && chown -R nobody:nobody "$pkg"
 done
