@@ -25,7 +25,7 @@ if (( $UID != 0 )); then
 	elif type -P su >/dev/null; then
 		exec su -l -c "$0" "$@"
 	fi
-	echo 'You need to be root'
+	printf '\e[7;31;40mYou need to be root\e[m\n'
 	exit 1
 fi
 
