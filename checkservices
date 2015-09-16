@@ -36,6 +36,7 @@ if [[ -t 1 ]]; then
 fi
 
 # default options
+confirm=1			# confirm before restart
 dbus=1				# relauch when dbus
 debug=0				# debug mode
 failed=1			# display failed service at the end
@@ -44,7 +45,6 @@ reload=1 			# reload systemd
 restart=1			# restart services
 serialize=0			# run in parallel
 status=1 			# display status after systemctl
-timeout=5			# timeout duration
 user_slice=0		# act on users services
 
 # display application usage and exit 2
@@ -53,9 +53,9 @@ usage() {
 	echo "description: check for updated files in a service"
 	echo 'options:'
 	echo '  -h: this help' >&2
-	echo "  -t: timeout before restart (default: ${timeout}s)" >&2
 	echo "  -d: debug mode" >&2
 	echo "  -b/-B: restart (or not) ${0##*/} if dbus was updated (default: $dbus)" >&2
+	echo "  -c/-C: ask (or not) confirmation before restart" >&2
 	echo "  -l/-L: call (or not) systemd daemon-reload (default: $reload)" >&2
 	echo "  -f/-F: display (or not) failed services before quit (default: $failed)" >&2
 	echo "  -p/-P: call (or not) pacdiff before act (default: $pacdiff)" >&2
@@ -78,16 +78,32 @@ in_array() {
 	return 1 # Not Found
 }
 
-while getopts 'hBbdFfLlPpRrSst:UuZz' opt; do
+# ask for confirmation before restarting services
+confirm_restart() {
+	if (( $confirm == 1 )); then
+		while true; do
+			printf 'Confirm services restart? [y|N] '
+			read -r ans
+			case $ans in
+				y|Y|yes|Yes) return 0;;
+				n|N|no|No) return 1;;
+			esac
+		done
+	else
+		return 0
+	fi
+}
+
+while getopts 'hBbCcdFfLlPpRrSsUuZz' opt; do
 	case $opt in
 		B) dbus=0;; 			b) dbus=1;;
+		C) confirm=0;; 			c) confirm=1;;
 		d) debug=1;;
 		F) failed=0;;			f) failed=1;;
 		L) reload=0;;			l) reload=1;;
 		P) pacdiff=0;;			p) pacdiff=1;;
 		R) restart=0;; 			r) restart=1;;
 		S) status=0;;			s) status=1;;
-		t) timeout="$OPTARG";;
 		U) user_slice=0;;		u) user_slice=1;;
 		Z) serialize=0;;		z) serialize=1;;
 		*) usage;;
@@ -167,18 +183,7 @@ done
 (( "${#needy[*]}" )) && echo '-------8<-------------------------------8<---------'
 
 # start the dangerous action below
-if ! (( $restart == 0 || ${#needy[*]} == 0 )); then
-
-	# wait the timeout
-	(( $timeout > 0 )) && {
-		echo "Waiting for ${timeout} seconds"
-		echo "Use ctrl+c to undo"
-		for i in $(seq $timeout -1 1); do
-			echo -n "$i..."
-			sleep 1
-		done
-		echo 0
-	}
+if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 
 	# do the job, restart updated services
 	for svc in "${needy[@]}"; do
