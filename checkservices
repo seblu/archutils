@@ -195,8 +195,6 @@ if (( $serialize == 0 )) && (( $status )); then
 	systemctl --lines=0 status "${needy[@]}"
 fi
 
-(( $failed )) && systemctl --failed --all --no-pager --no-legend --full list-units
-
 # warn if dbus was restart
 if in_array dbus.service "${needy[@]}"; then
 	echo "${c_warn}After dbus restart, you should run ${0##*/} twice${c_rst}" >&2
@@ -206,5 +204,7 @@ if in_array dbus.service "${needy[@]}"; then
 		exec "$0" "$@"
 	fi
 fi
+
+(( $failed )) && systemctl --failed --all --no-pager --no-legend --full list-units
 
 exit 0
