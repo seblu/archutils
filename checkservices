@@ -40,11 +40,11 @@ confirm=1			# confirm before restart
 dbus=1				# relauch when dbus
 debug=0				# debug mode
 failed=1			# display failed service at the end
-pacdiff=1 			# run pacdiff
-reload=1 			# reload systemd
+pacdiff=1			# run pacdiff
+reload=1			# reload systemd
 restart=1			# restart services
 serialize=0			# run in parallel
-status=1 			# display status after systemctl
+status=1			# display status after systemctl
 user_slice=0		# act on users services
 
 # display application usage and exit 2
@@ -96,13 +96,13 @@ confirm_restart() {
 
 while getopts 'hBbCcdFfLlPpRrSsUuZz' opt; do
 	case $opt in
-		B) dbus=0;; 			b) dbus=1;;
-		C) confirm=0;; 			c) confirm=1;;
+		B) dbus=0;;				b) dbus=1;;
+		C) confirm=0;;			c) confirm=1;;
 		d) debug=1;;
 		F) failed=0;;			f) failed=1;;
 		L) reload=0;;			l) reload=1;;
 		P) pacdiff=0;;			p) pacdiff=1;;
-		R) restart=0;; 			r) restart=1;;
+		R) restart=0;;			r) restart=1;;
 		S) status=0;;			s) status=1;;
 		U) user_slice=0;;		u) user_slice=1;;
 		Z) serialize=0;;		z) serialize=1;;
