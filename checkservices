@@ -83,7 +83,7 @@ confirm_restart() {
 	if (( $confirm == 1 )); then
 		while true; do
 			printf 'Confirm services restart? [y|N] '
-			read -r ans
+			read -r ans || return 1
 			case $ans in
 				y|Y|yes|Yes) return 0;;
 				n|N|no|No) return 1;;
