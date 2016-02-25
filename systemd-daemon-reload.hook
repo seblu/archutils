@@ -1,0 +1,12 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = File
+Target = *.service
+
+[Action]
+Description = Reload of systemd units
+Depends = systemd
+When = PostTransaction
+Exec = /usr/bin/systemctl daemon-reload

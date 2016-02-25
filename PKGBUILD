@@ -14,7 +14,7 @@ conflicts=('archutils' 'kernel-reinstall')
 
 package() {
   cd "$startdir"
-  install -dm755 "$pkgdir"/usr/{share/licenses/$pkgname,bin,lib/munin/plugins}
+  install -dm755 "$pkgdir"/usr/{share/{licenses/$pkgname,libalpm/hooks},bin,lib/munin/plugins}
   # install legal stuff
   install -m644 COPYRIGHT LICENSE "$pkgdir/usr/share/licenses/$pkgname"
   # install binaries
@@ -26,6 +26,8 @@ package() {
   # add shortcut, because i'm lazy
   ln -s checkservices "$pkgdir/usr/bin/cs"
   ln -s system-upgrade "$pkgdir/usr/bin/sup"
+  # add hooks
+  install -m644 systemd-daemon-reload.hook "$pkgdir/usr/share/libalpm/hooks/10-systemd-daemon-reload.hook"
 }
 
 # vim:set ts=2 sw=2 et:
