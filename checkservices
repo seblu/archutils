@@ -195,7 +195,7 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 		if (( $serialize )); then
 			wait
 			# display status directly when serialize and not quiet
-			(( $status )) && systemctl --lines=0 status "$svc"
+			(( $status )) && systemctl --no-pager --lines=0 status "$svc"
 		else
 			# register pids
 			registered_pids[$!]="$svc"
@@ -210,7 +210,7 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 		for pid in "${!registered_pids[@]}"; do
 			in_array "$pid" "${running_pids[@]}" && continue
 			# show units status
-			(( $status )) && systemctl --lines=0 status "${registered_pids[$pid]}"
+			(( $status )) && systemctl --no-pager --lines=0 status "${registered_pids[$pid]}"
 			unset registered_pids[$pid]
 			break
 		done
