@@ -185,20 +185,36 @@ done
 # start the dangerous action below
 if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 
+	declare -A registered_pids=()
+	declare -a running_pids=()
+
 	# do the job, restart updated services
 	for svc in "${needy[@]}"; do
 		echo "Restarting ${c_svc}$svc${c_rst}"
 		systemctl restart "$svc" &
-		(( $serialize )) && wait
-		# display status directly when serialize and not quiet
-		(( $serialize )) && (( $status )) && systemctl --lines=0 status "$svc"
+		if (( $serialize )); then
+			wait
+			# display status directly when serialize and not quiet
+			(( $status )) && systemctl --lines=0 status "$svc"
+		else
+			# register pids
+			registered_pids[$!]="$svc"
+		fi
 	done
-	wait
 
-	# show units status
-	if (( $serialize == 0 )) && (( $status )); then
-		systemctl --lines=0 status "${needy[@]}"
-	fi
+	# display status as soon as available when not serialized
+	while (( ${#registered_pids[*]} )); do
+		running_pids=( $(jobs -p) )
+		(( ${#running_pids[*]} )) || break
+		wait -n
+		for pid in "${!registered_pids[@]}"; do
+			in_array "$pid" "${running_pids[@]}" && continue
+			# show units status
+			(( $status )) && systemctl --lines=0 status "${registered_pids[$pid]}"
+			unset registered_pids[$pid]
+			break
+		done
+	done
 
 	# warn if dbus was restart
 	if in_array dbus.service "${needy[@]}"; then
