@@ -207,6 +207,14 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 		running_pids=( $(jobs -p) )
 		(( ${#running_pids[*]} )) || break
 		wait -n
+		# ensure we are not at 1st infinite loop
+		# if wait doesn't return a process exit value someting wrong happen
+		if (( $? == 127 )); then
+			echo "${c_error}** Unable to wait processes to finish${c_rst}" >&2
+			echo "${c_error}** Registered PIDs: ${registered_pids[*]}${c_rst}" >&2
+			echo "${c_error}** Running PIDs: ${running_pids[*]}${c_rst}" >&2
+			break
+		fi
 		for pid in "${!registered_pids[@]}"; do
 			in_array "$pid" "${running_pids[@]}" && continue
 			# show units status
