@@ -187,6 +187,7 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 
 	declare -A registered_pids=()
 	declare -a running_pids=()
+	declare -i last_registered_pids_count
 
 	# do the job, restart updated services
 	for svc in "${needy[@]}"; do
@@ -204,17 +205,14 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 
 	# display status as soon as available when not serialized
 	while (( ${#registered_pids[*]} )); do
-		running_pids=( $(jobs -p) )
-		(( ${#running_pids[*]} )) || break
+		# wait for process at least one process to finish
 		wait -n
-		# ensure we are not at 1st infinite loop
-		# if wait doesn't return a process exit value someting wrong happen
-		if (( $? == 127 )); then
-			echo "${c_error}** Unable to wait processes to finish${c_rst}" >&2
-			echo "${c_error}** Registered PIDs: ${registered_pids[*]}${c_rst}" >&2
-			echo "${c_error}** Running PIDs: ${running_pids[*]}${c_rst}" >&2
-			break
-		fi
+
+		running_pids=( $(jobs -p) )
+
+		# count registered pid for loop protection
+		last_registered_pids_count=${#registered_pids[*]}
+
 		for pid in "${!registered_pids[@]}"; do
 			in_array "$pid" "${running_pids[@]}" && continue
 			# show units status
@@ -222,6 +220,15 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 			unset registered_pids[$pid]
 			break
 		done
+
+		# ensure we are not at 1st infinite loop
+		# if we didn't remove a process something wrong happen
+		if (( $last_registered_pids_count == ${#registered_pids[*]} )); then
+			echo "${c_error}** Unable to wait processes to finish${c_rst}" >&2
+			echo "${c_error}** Registered PIDs: ${registered_pids[*]}${c_rst}" >&2
+			echo "${c_error}** Running PIDs: ${running_pids[*]}${c_rst}" >&2
+			break
+		fi
 	done
 
 	# warn if dbus was restart
