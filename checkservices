@@ -139,14 +139,17 @@ declare -i pid=0
 for svc in "${services[@]}"; do
 	unit_path="$(systemctl -p ControlGroup show "$svc"|cut -f 2 -d=)"
 	busname="$(systemctl -p BusName show "$svc"|cut -f 2 -d=)"
-	tasks_path="$SYSTEMD_CGROUP_BASE_PATH/$unit_path/tasks"
-	[[ -e "$tasks_path" ]] || {
-		echo "${c_error}** Unable to get pid of $svc: No tasks file: $tasks_path${c_rst}" >&2
-		continue
-	}
-	# check if unit is in system slice
+	# get the right pidfile name
+	unset pidfile
+	for path in "$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
+		"$SYSTEMD_CGROUP_BASE_PATH$unit_path/tasks"; do
+		[[ -r "$path" ]] && pidfile="$path" && continue
+	done
+	[[ -z "$pidfile" ]] && echo "${c_error}** Unable to find pid file for $svc." >&2 && continue
+	# skip non system units
 	(( $user_slice == 0 )) && [[ "$unit_path" =~ /user\.slice/ ]] && continue
-	pids=( $(< "$SYSTEMD_CGROUP_BASE_PATH/$unit_path/tasks") )
+	# parse pidfile
+	pids=( $(< "$pidfile") )
 	if (( "${#pids[*]}" == 0 )); then
 		echo "${c_error}** Unable to get pid of $svc: Tasks file is empty${c_rst}" >&2
 		continue
