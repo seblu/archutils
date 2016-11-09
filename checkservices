@@ -28,10 +28,11 @@ SYSTEMD_CGROUP_BASE_PATH='/sys/fs/cgroup/systemd'
 # colors
 if [[ -t 1 ]]; then
 	shopt -s xpg_echo
-	c_title='\e[1;33m'
+	c_arrow='\e[1;34m'
+	c_title='\e[1;37m'
 	c_svc='\e[1;35m'
 	c_warn='\e[5;30;43m'
-	c_error='\e[5;30;41m'
+	c_error='\e[1;31m'
 	c_rst='\e[m'
 fi
 
@@ -64,6 +65,16 @@ usage() {
 	echo "  -u/-U: act (or not) on services in users slice (default: $user_slice)" >&2
 	echo "  -z/-Z: serialize (or not) action (default: $serialize)" >&2
 	exit 2
+}
+
+# print $* as an arrow line
+arrow() {
+	printf "%b==> %b%s%b\n" "$c_arrow" "$c_title" "$*" "$c_rst"
+}
+
+# print $* as an error message
+error() {
+	printf "%bError: %b%s%b\n" "$c_error" "$c_title" "$*" "$c_rst" >&2
 }
 
 # usage : in_array( $needle, $haystack )
@@ -116,24 +127,27 @@ shift $((OPTIND - 1));
 trap '' SIGHUP
 
 # from now, we need to be root
-(( $UID != 0 )) && echo 'You need to be root' && exit 1
+(( $UID != 0 )) && error 'You need to be root' && exit 1
 
 # call pacdiff
-(( $pacdiff )) && pacdiff
+(( $pacdiff )) && arrow 'Run pacdiff' && pacdiff
 
 # reload units list
-(( $reload )) && systemctl --system daemon-reload
+(( $reload )) && arrow 'Reload systemd' && systemctl --system daemon-reload
 
 # list of running services
+arrow 'List runnings systemd services'
 declare -a services
 services=($(systemctl --no-legend --full --type service --state running|cut -f1 -d' '))
 
 # list of bus names
+arrow 'List Dbus clients'
 declare -a buses
 buses=($(dbus-send --system --dest=org.freedesktop.DBus --type=method_call \--print-reply \
 /org/freedesktop/DBus org.freedesktop.DBus.ListNames|sed -rn 's/\s*string "(.*)"/\1/p'))
 
 # count beggar services
+arrow "Search for updated mapped files"
 declare -a needy=() pids=()
 declare -i pid=0
 for svc in "${services[@]}"; do
@@ -145,19 +159,19 @@ for svc in "${services[@]}"; do
 		"$SYSTEMD_CGROUP_BASE_PATH$unit_path/tasks"; do
 		[[ -r "$path" ]] && pidfile="$path" && continue
 	done
-	[[ -z "$pidfile" ]] && echo "${c_error}** Unable to find pid file for $svc." >&2 && continue
+	[[ -z "$pidfile" ]] && error "Unable to find pid file for $svc." && continue
 	# skip non system units
 	(( $user_slice == 0 )) && [[ "$unit_path" =~ /user\.slice/ ]] && continue
 	# parse pidfile
 	pids=( $(< "$pidfile") )
 	if (( "${#pids[*]}" == 0 )); then
-		echo "${c_error}** Unable to get pid of $svc: Tasks file is empty${c_rst}" >&2
+		error "Unable to parse pid file for $svc."
 		continue
 	fi
 	for pid in "${pids[@]}"; do
 		maps_path="/proc/$pid/maps"
-		[[ -e "$maps_path" ]] || {
-			echo "${c_error}** Unable to get maps file of $svc for pid $pid${c_rst}" >&2
+		[[ -r "$maps_path" ]] || {
+			error "Unable to read maps file of $svc for pid $pid."
 			continue
 		}
 		deleted=$(grep -F '(deleted)' "$maps_path" |sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p'|sort|uniq)
@@ -227,9 +241,9 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 		# ensure we are not at 1st infinite loop
 		# if we didn't remove a process something wrong happen
 		if (( $last_registered_pids_count == ${#registered_pids[*]} )); then
-			echo "${c_error}** Unable to wait processes to finish${c_rst}" >&2
-			echo "${c_error}** Registered PIDs: ${registered_pids[*]}${c_rst}" >&2
-			echo "${c_error}** Running PIDs: ${running_pids[*]}${c_rst}" >&2
+			error "Unable to wait processes to finish"
+			error "Registered PIDs: ${registered_pids[*]}"
+			error "Running PIDs: ${running_pids[*]}"
 			break
 		fi
 	done
@@ -245,6 +259,6 @@ if (( $restart == 1 && ${#needy[*]} > 0 )) && confirm_restart; then
 	fi
 fi
 
-(( $failed )) && systemctl --failed --all --no-pager --no-legend --full list-units
+(( $failed )) && arrow "List failed units" && systemctl --failed --all --no-pager --no-legend --full list-units
 
 exit 0
