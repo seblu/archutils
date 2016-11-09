@@ -96,7 +96,7 @@ confirm() {
     local -i try
     local ans
     for try in 5 4 3 2 1; do
-        printf '%s [y|N] ' "$1"
+        printf '%s [Yes|No] ' "$1"
         read -r ans || return 1
         case $ans in
             y|Y|yes|Yes) return 0;;
