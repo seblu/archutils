@@ -99,7 +99,7 @@ get_broken_maps() {
     local -a pids=()
     local -i pid=0
     for service in $(get_services); do
-        unit_path="$(systemctl -p ControlGroup show "$service"|cut -f 2 -d=)"
+        unit_path="$(systemctl --property ControlGroup --value show "$service")"
         # get the right pidfile name
         pidfile=''
         for path in "$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
@@ -143,7 +143,7 @@ get_missing_dbus() {
     local -a registered=($(get_dbus_names))
     for service in $(get_services); do
         # get the service registered bus name
-        busname="$(systemctl -p BusName show "$service"|cut -f 2 -d=)"
+        busname="$(systemctl --property BusName --value show "$service")"
         if [[ "$busname" ]] && ! in_array "$busname" "${registered[@]}"; then
             echo $service
         fi
