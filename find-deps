@@ -1,0 +1,105 @@
+#!/usr/bin/python
+# coding: utf-8
+
+# Copyright © Sébastien Luttringer
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+'''Find dependencies of a package or directory'''
+
+from argparse import ArgumentParser
+from elftools.elf.elffile import ELFFile
+from elftools.elf.dynamic import DynamicSection, DynamicSegment
+from os import walk
+from os.path import join, exists, isdir, isfile, normpath, realpath
+from pprint import pprint
+from pycman import config
+from shlex import split
+from subprocess import check_call
+from sys import stderr
+from tempfile import TemporaryDirectory
+
+PACKAGES = None
+
+def find_sharedlibs(fd):
+    ef = ELFFile(fd)
+    for section in ef.iter_sections():
+        if isinstance(section, DynamicSection):
+            for tag in section.iter_tags():
+                if tag.entry.d_tag == 'DT_NEEDED':
+                    yield(tag.needed)
+
+def find_pkg(path):
+    '''find the package owning path'''
+    if not exists(path):
+        return None
+    path = normpath(realpath(path)).lstrip('/')
+    global PACKAGES
+    if PACKAGES is None:
+        PACKAGES = config.init_with_config("/etc/pacman.conf").get_localdb().pkgcache
+    for pkg in PACKAGES:
+        if path in [ x[0] for x in pkg.files]:
+            return(pkg.name)
+    return None
+
+def find_deps(path):
+    '''find deps packages in shebang'''
+    deps = {}
+    for (dirpath, dirnames, filenames) in walk(path):
+        for filename in filenames:
+            fpath = join(dirpath, filename)
+            with open(fpath, "rb") as fd:
+                magic = fd.read(4)
+                fd.seek(0)
+                # ELF
+                if magic == b"\x7fELF":
+                    for libname in find_sharedlibs(fd):
+                        pkgname = find_pkg("/usr/lib/%s" % libname)
+                        deps.setdefault(pkgname, dict())
+                        deps[pkgname].setdefault(libname, set())
+                        deps[pkgname][libname] |= {fpath}
+                elif magic[:2] == b"#!":
+                    exec_path = fd.readline()[2:].split()[0].decode()
+                    pkgname = find_pkg(exec_path)
+                    deps.setdefault(pkgname, dict())
+                    deps[pkgname].setdefault(exec_path, set())
+                    deps[pkgname][exec_path] |= {fpath}
+    return(deps)
+
+def parse_argv():
+    '''Parse command line arguments'''
+    parser = ArgumentParser()
+    parser.add_argument("path", metavar="package|directory")
+    return parser.parse_args()
+
+def main():
+    '''Program entry point'''
+    args = parse_argv()
+    if isfile(args.path):
+        pkgdir = TemporaryDirectory()
+        check_call(["tar", "xfC", args.path, pkgdir.name])
+        args.path = pkgdir.name
+    if isdir(args.path):
+        #check_call(["tree", args.path])
+        pprint(find_deps(args.path))
+    else:
+        stderr.write("Unsupported file type\n")
+        return 2
+    return 0
+
+if __name__ == '__main__':
+    main()
+
+# vim:set ts=4 sw=4 et ai:
