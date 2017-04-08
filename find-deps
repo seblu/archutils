@@ -22,7 +22,7 @@
 from argparse import ArgumentParser
 from elftools.elf.dynamic import DynamicSection, DynamicSegment
 from elftools.elf.elffile import ELFFile
-from os import walk, environ, getcwd, chdir
+from os import walk, environ, getcwd, chdir, access, R_OK
 from os.path import join, exists, isdir, isfile, normpath, realpath
 from pprint import pprint
 from pycman import config
@@ -32,6 +32,31 @@ from tarfile import open as tar
 from tempfile import TemporaryDirectory
 
 PACKAGES = None
+
+def missing_pkginfo(path, deps):
+    '''show deps against path'''
+    fpath = join(path, ".PKGINFO")
+    if not access(fpath, R_OK):
+        return
+    pkginfo = parse_pkginfo(fpath)
+    if "depend" not in pkginfo:
+        return
+    diff = set(deps.keys() - set(pkginfo["depend"]))
+    if len(diff) > 0:
+        print("\n:: Missing in .PKGINFO")
+        pprint(diff)
+
+def parse_pkginfo(path):
+    '''parse a .PKGINFO file'''
+    pkginfo = dict()
+    with open(path) as fd:
+        for line in fd.readlines():
+            # skip empty and comment
+            if len(line) == 0 or line[0] == "#":
+                continue
+            lhs, rhs = line.split("=", 1)
+            pkginfo.setdefault(lhs.strip(), []).append(rhs.strip())
+    return(pkginfo)
 
 def find_sharedlibs(fd):
     ef = ELFFile(fd)
@@ -97,7 +122,12 @@ def main():
         tarball.extractall(pkgdir.name)
         args.path = pkgdir.name
     if isdir(args.path):
-        pprint(find_deps(args.path))
+        deps = find_deps(args.path)
+        # display deps
+        print(":: Found deps")
+        pprint(deps)
+        # show missing deps in .PKGINFO
+        missing_pkginfo(args.path, deps)
     else:
         stderr.write("Unsupported file type\n")
         return 2
