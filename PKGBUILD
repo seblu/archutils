@@ -7,7 +7,8 @@ pkgdesc='Seblu Archlinux Utils'
 arch=('any')
 url='https://github.com/seblu/archutils'
 license=('GPL2')
-depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools')
+depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
+         'python-pygments')
 provides=('archutils' 'kernel-reinstall')
 replaces=('kernel-reinstall')
 conflicts=('archutils' 'kernel-reinstall')
