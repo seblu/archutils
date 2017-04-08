@@ -22,7 +22,7 @@
 from argparse import ArgumentParser
 from elftools.elf.elffile import ELFFile
 from elftools.elf.dynamic import DynamicSection, DynamicSegment
-from os import walk, environ
+from os import walk, environ, getcwd, chdir
 from os.path import join, exists, isdir, isfile, normpath, realpath
 from pprint import pprint
 from pycman import config
@@ -56,9 +56,11 @@ def find_pkg(path):
     return None
 
 def find_deps(path):
-    '''find deps packages in shebang'''
+    '''find deps packages'''
     deps = {}
-    for (dirpath, dirnames, filenames) in walk(path):
+    cwd = getcwd()
+    chdir(path)
+    for (dirpath, dirnames, filenames) in walk("."):
         for filename in filenames:
             fpath = join(dirpath, filename)
             with open(fpath, "rb") as fd:
@@ -77,6 +79,7 @@ def find_deps(path):
                     deps.setdefault(pkgname, dict())
                     deps[pkgname].setdefault(exec_path, set())
                     deps[pkgname][exec_path] |= {fpath}
+    chdir(cwd)
     return(deps)
 
 def parse_argv():
