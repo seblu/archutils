@@ -92,7 +92,6 @@ def main():
         check_call(["tar", "xfC", args.path, pkgdir.name])
         args.path = pkgdir.name
     if isdir(args.path):
-        #check_call(["tree", args.path])
         pprint(find_deps(args.path))
     else:
         stderr.write("Unsupported file type\n")
