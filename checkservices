@@ -212,6 +212,16 @@ restart_services() {
     done
 }
 
+# reload or reexectute systemd
+reload_systemd() {
+  if grep -qF '(deleted)' /proc/1/maps; then
+    arrow 'Restart systemd'
+    systemctl --system daemon-reexec
+  else
+    arrow 'Reload systemd'
+    systemctl --system daemon-reload
+  fi
+}
 
 # display application usage and exit 2
 usage() {
@@ -220,7 +230,7 @@ usage() {
     echo 'options:'
     echo '  -h: this help' >&2
     echo "  -c: auto confirmation" >&2
-    echo "  -l/-L: call (or not) systemd daemon-reload (default: $RELOAD)" >&2
+    echo "  -l/-L: call (or not) systemd daemon-(reload|reexec) (default: $RELOAD)" >&2
     echo "  -f/-F: display (or not) failed services before quit (default: $FAILED)" >&2
     echo "  -p/-P: call (or not) pacdiff before act (default: $PACDIFF)" >&2
     echo "  -r/-R: restart (or not) services with updated files (default: $RESTART)" >&2
@@ -268,11 +278,8 @@ main() {
         pacdiff
     fi
 
-    # ensure systemd has been reloaded
-    if (( $RELOAD )); then
-        arrow 'Reload systemd'
-        systemctl --system daemon-reload
-    fi
+    # ensure systemd has been reloaded or reexectued
+    (( $RELOAD )) && reload_systemd
 
     arrow 'Services with broken maps files'
     local -a broken_services=($(get_broken_maps))
