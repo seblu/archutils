@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# Copyright © Sébastien Luttringer
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+REPO_SSH=repos.archlinux.org
+
+shopt -s xpg_echo
+
+if [[ -t 0 && -t 2 ]]; then
+	RED=$'\e''[1;31m'
+	GREEN=$'\e''[1;32m'
+	BLUE=$'\e''[1;34m'
+	BOLD=$'\e''[0;1m'
+	RESET=$'\e''[m'
+fi
+
+msg() {
+	printf "$GREEN==>$BOLD $1$RESET\n" "${@:1}"
+}
+
+msg2() {
+	printf "$BLUE  ->$BOLD $1$RESET\n" "${@:1}"
+}
+
+usage() {
+	echo "usage: ${0##*/} [options] <core|extra|commnunity> package ..." >&2
+	exit 1
+}
+
+main() {
+	(( $# < 2 )) && usage
+	repo=$1
+	shift
+	case $repo in
+		core|extra)
+			cmd=archco
+			svn=/srv/repos/svn-packages/dbscripts
+		;;
+		community)
+			cmd=communityco
+			svn=/srv/repos/svn-community/dbscripts
+		;;
+		*) usage;;
+	esac
+	local wd="$(mktemp -d)"
+	cd "$wd"
+	for pkg; do
+		msg "Checkout $cmd $pkg"
+		$cmd "$pkg"
+		pushd "$pkg/trunk" >/dev/null
+		msg 'Prepare AUR export'
+		mksrcinfo
+		git init
+		git add * .SRCINFO
+		git commit -m 'Initial Commit' -m "Moved from $repo"
+		git remote add origin "ssh://aur@aur.archlinux.org/$pkg.git"
+		msg 'Push to AUR'
+		git push -u origin master
+		popd >/dev/null
+		msg 'Remove package from repo'
+		ssh "$REPO_SSH" $svn/db-remove $repo x86_64 "$pkg"
+		ssh "$REPO_SSH" $svn/db-remove $repo i686 "$pkg"
+		ssh "$REPO_SSH" $svn/db-remove $repo any "$pkg"
+	done
+	msg 'Cleanup'
+	rm -rf "$wd"
+}
+
+main "$@"
+
+# vim:set ts=2 sw=2 ft=sh noet:
