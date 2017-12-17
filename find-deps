@@ -143,9 +143,13 @@ def main():
         formater = TerminalFormatter() if stdout.isatty() else NullFormatter()
         stdout.write(highlight(pformat(deps), PythonLexer(), formater))
         # show missing deps in .PKGINFO
-        if len(mdeps) > 0:
+        if mdeps is None:
+            msg(".PKGINFO not found")
+        elif len(mdeps) > 0:
             msg("Missing in .PKGINFO")
             stdout.write(highlight(pformat(mdeps), PythonLexer(), formater))
+        else:
+            msg("Nothing is missing in .PKGINFO")
     else:
         err("Unsupported file type")
         return 2
