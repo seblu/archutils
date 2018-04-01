@@ -11,7 +11,7 @@ depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
          'python-pygments')
 provides=('archutils' 'kernel-reinstall')
 replaces=('kernel-reinstall')
-conflicts=('archutils' 'kernel-reinstall')
+conflicts=('archutils' 'kernel-reinstall' 'bsd-games')
 
 package() {
   cd "$startdir"
