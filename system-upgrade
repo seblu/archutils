@@ -18,19 +18,69 @@
 
 # Smart way to update your archlinux system
 
-# We need to be root
-if (( $UID != 0 )); then
-	if type -P sudo >/dev/null; then
-		exec sudo -- "$0" "$@"
-	elif type -P su >/dev/null; then
-		exec su -l -c "$0" "$@"
-	fi
-	printf '\e[7;31;40mYou need to be root\e[m\n'
-	exit 1
-fi
+SCREEN=screen
+PACMAN_OPTS=()
 
-if pacman --sync --refresh --sysupgrade "$@"; then
-	checkservices
-else
-	printf '\e[7;33;40mcheckservices not run because pacman did not exit zero\e[m\n'
-fi
+# run system upgrade and checkservices
+upgrade() {
+		if pacman --sync --refresh --sysupgrade "${PACMAN_OPTS[@]}"; then
+			checkservices
+		else
+			printf '\e[7;33;40mcheckservices not run because pacman did not exit zero\e[m\n'
+		fi
+}
+
+# We need to be root
+enforce_root() {
+	if (( $UID != 0 )); then
+		if type -P sudo >/dev/null; then
+			exec sudo -- "$0" "$@"
+		elif type -P su >/dev/null; then
+			exec su -c "$0" "$@"
+		fi
+		printf '\e[7;31;40mYou need to be root\e[m\n'
+		exit 1
+	fi
+}
+
+# display application usage and exit 1
+usage() {
+    echo "usage ${0##*/} [options] -- [pacman options]"
+    echo "description: archlinux system upgrade with checkservices"
+    echo 'options:'
+    echo '  -h: this help' >&2
+    echo "  -S: no screen" >&2
+    exit 1
+}
+
+# parse command line arguments
+# set options as global vars
+argparse() {
+    local opt
+    while getopts 'hS' opt; do
+        case $opt in
+            S) SCREEN=0;;
+            *) usage;;
+        esac
+    done
+    shift $((OPTIND - 1));
+    PACMAN_OPTS=("$@")
+}
+
+# emulated program entry point
+main() {
+    # parse command line options
+    argparse "$@"
+
+		# be root
+		enforce_root "$@"
+
+		if [[ "$SCREEN" ]] && type -P $SCREEN >/dev/null; then
+			exec $SCREEN "$0" -S "$@"
+		fi
+
+		# relly do the job
+		upgrade
+}
+
+main "$@"
