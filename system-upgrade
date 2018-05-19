@@ -19,6 +19,7 @@
 # Smart way to update your archlinux system
 
 SCREEN=screen
+WAIT=0
 PACMAN_OPTS=()
 
 # run system upgrade and checkservices
@@ -57,9 +58,10 @@ usage() {
 # set options as global vars
 argparse() {
     local opt
-    while getopts 'hS' opt; do
+    while getopts 'hSw' opt; do
         case $opt in
             S) SCREEN='';;
+            w) WAIT=1;;
             *) usage;;
         esac
     done
@@ -74,7 +76,7 @@ main() {
 
     if [[ -z "$STY" && -z "$TMUX" && -n "$SCREEN" ]] && type -P $SCREEN >/dev/null
     then
-      exec $SCREEN "$0" -S "$@"
+      exec $SCREEN "$0" -S -w "$@"
     fi
 
     # be root
@@ -84,6 +86,10 @@ main() {
 
     # relly do the job
     upgrade
+
+    if (( $WAIT == 1 )); then
+      read -r -p "Type enter to quit"
+    fi
 }
 
 main "$@"
