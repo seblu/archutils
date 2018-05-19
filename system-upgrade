@@ -72,13 +72,15 @@ main() {
     # parse command line options
     argparse "$@"
 
-		# be root
-		enforce_root "$@"
-
 		if [[ -z "$STY" && -z "$TMUX" && -n "$SCREEN" ]] && type -P $SCREEN >/dev/null
 		then
 			exec $SCREEN "$0" -S "$@"
 		fi
+
+		# be root
+		# -S to never start a screen as root (offer a root shell)
+		# and sudo strip environment so we loose $STY or $TMUX variables
+		enforce_root -S "$@"
 
 		# relly do the job
 		upgrade
