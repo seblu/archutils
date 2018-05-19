@@ -18,9 +18,9 @@
 
 # Smart way to update your archlinux system
 
-SCREEN=screen
-WAIT=0
-PACMAN_OPTS=()
+declare SCREEN=screen
+declare -i WAIT=0
+declare -a PACMAN_OPTS=()
 
 # run system upgrade and checkservices
 upgrade() {
