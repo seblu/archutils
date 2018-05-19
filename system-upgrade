@@ -59,7 +59,7 @@ argparse() {
     local opt
     while getopts 'hS' opt; do
         case $opt in
-            S) SCREEN=0;;
+            S) SCREEN='';;
             *) usage;;
         esac
     done
@@ -75,7 +75,8 @@ main() {
 		# be root
 		enforce_root "$@"
 
-		if [[ "$SCREEN" ]] && type -P $SCREEN >/dev/null; then
+		if [[ -z "$STY" && -z "$TMUX" && -n "$SCREEN" ]] && type -P $SCREEN >/dev/null
+		then
 			exec $SCREEN "$0" -S "$@"
 		fi
 
