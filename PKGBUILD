@@ -8,7 +8,7 @@ arch=('any')
 url='https://github.com/seblu/archutils'
 license=('GPL2')
 depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
-         'python-pygments')
+         'python-pygments' 'pacman-contrib')
 provides=('archutils' 'kernel-reinstall')
 replaces=('kernel-reinstall')
 conflicts=('archutils' 'kernel-reinstall' 'bsd-games')
