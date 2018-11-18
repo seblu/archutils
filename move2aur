@@ -63,7 +63,7 @@ main() {
 		$cmd "$pkg"
 		pushd "$pkg/trunk" >/dev/null
 		msg 'Prepare AUR export'
-		mksrcinfo
+		makepkg --printsrcinfo > .SRCINFO
 		git init
 		git add * .SRCINFO
 		git commit -m 'Initial Commit' -m "Moved from $repo"
