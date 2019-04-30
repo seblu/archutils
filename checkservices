@@ -215,7 +215,7 @@ restart_services() {
 # reload or reexectute systemd
 reload_systemd() {
   if grep -qF '(deleted)' /proc/1/maps; then
-    arrow 'Restart systemd'
+    arrow 'Reexec systemd'
     systemctl --system daemon-reexec
   else
     arrow 'Reload systemd'
