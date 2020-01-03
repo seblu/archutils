@@ -5,7 +5,7 @@ pkgver=$(date +%Y.%m.%d)
 pkgrel=1
 pkgdesc='Seblu Arch Linux Utils'
 arch=('any')
-url='https://github.com/seblu/archutils'
+url='https://git.seblu.net/archlinux/archutils'
 license=('GPL2')
 depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
          'python-pygments' 'pacman-contrib')
