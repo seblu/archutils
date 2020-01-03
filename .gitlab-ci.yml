@@ -8,8 +8,7 @@ makepkg:
     name: $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA
     expire_in: 1 week
     paths:
-      - "*.pkg.tar.xz"
-      - "*.pkg.tar.zst"
+      - "*.pkg.tar.*"
 
 commitpkg:
   stage: deploy
