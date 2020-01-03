@@ -1,17 +1,24 @@
 # Maintainer: Sébastien Luttringer
 
 pkgname=archutils-git
-pkgver=$(date +%Y.%m.%d)
+epoch=1
+pkgver=1
 pkgrel=1
 pkgdesc='Seblu Arch Linux Utils'
 arch=('any')
 url='https://git.seblu.net/archlinux/archutils'
 license=('GPL2')
+makedepends=('git')
 depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
          'python-pygments' 'pacman-contrib')
 provides=('archutils' 'kernel-reinstall')
 replaces=('kernel-reinstall')
 conflicts=('archutils' 'kernel-reinstall' 'bsd-games')
+
+pkgver() {
+  cd "$startdir"
+  git rev-list --count HEAD
+}
 
 package() {
   cd "$startdir"
