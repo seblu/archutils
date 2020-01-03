@@ -17,7 +17,7 @@ conflicts=('archutils' 'kernel-reinstall' 'bsd-games')
 
 pkgver() {
   cd "$startdir"
-  git rev-list --count HEAD
+  printf '%s.%(%Y%m%d%H%M%S)T' "$(git rev-list --count HEAD)"
 }
 
 package() {
