@@ -27,8 +27,11 @@ for dir; do
     [[ -r "$base/PKGBUILD" ]] && echo "$d" && 'rm' -r "$d"
   done
 
-  find "$dir" \( -name '*.pkg.tar.xz' \
+  find "$dir" \( \
+            -name '*.pkg.tar.xz' \
          -o -name '*.pkg.tar.xz.sig' \
+         -o -name '*.pkg.tar.zst' \
+         -o -name '*.pkg.tar.zst.sig' \
          -o -name '*.src.tar.gz' \
          -o -name '*.log' \
          -o -name 'svn-commit.tmp' \
