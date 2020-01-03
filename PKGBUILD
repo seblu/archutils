@@ -3,7 +3,7 @@
 pkgname=archutils-git
 pkgver=$(date +%Y.%m.%d)
 pkgrel=1
-pkgdesc='Seblu Archlinux Utils'
+pkgdesc='Seblu Arch Linux Utils'
 arch=('any')
 url='https://github.com/seblu/archutils'
 license=('GPL2')
