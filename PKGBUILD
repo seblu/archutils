@@ -19,7 +19,7 @@ package() {
   # install legal stuff
   install -m644 COPYRIGHT LICENSE "$pkgdir/usr/share/licenses/$pkgname"
   # install binaries
-  install -m755 atc aurdown go2chroot addpkg sign getpkg pkgbuild2json \
+  install -m755 atc aurdown go2chroot newpkg sign getpkg pkgbuild2json \
     tmpmakepkg reinstallpkgs checkservices archlinux-update reexec \
     kernel-reinstall system-upgrade find-deps move2aur "$pkgdir/usr/bin"
   # install munin stuff
