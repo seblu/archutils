@@ -1,0 +1,27 @@
+---
+
+makepkg:
+  stage: build
+  script:
+    - seblu-build
+  artifacts:
+    name: $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA
+    expire_in: 1 week
+    paths:
+      - "*.pkg.tar.xz"
+      - "*.pkg.tar.zst"
+
+commitpkg:
+  stage: deploy
+  script:
+    - eval $(ssh-agent -s)
+    # - trap "kill $SSH_AGENT_PID" 0
+    # trap is broken in gitlab runner, see:
+    # https://gitlab.com/gitlab-org/gitlab-runner/issues/3009
+    # use a workaournd with sleep and kill:
+    - sleep 300 && kill "$SSH_AGENT_PID" & disown
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - seblu-push
+  only:
+    refs:
+      - master
