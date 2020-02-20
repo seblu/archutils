@@ -23,7 +23,7 @@ from argparse import ArgumentParser
 from elftools.elf.dynamic import DynamicSection, DynamicSegment
 from elftools.elf.elffile import ELFFile
 from os import walk, environ, getcwd, chdir, access, R_OK
-from os.path import join, exists, isdir, isfile, normpath, realpath
+from os.path import join, exists, isdir, isfile, normpath, realpath, splitext
 from pprint import pformat
 from pycman import config
 from pygments import highlight
@@ -32,7 +32,7 @@ from pygments.lexers import PythonLexer
 from shlex import split
 from sys import stdout, stderr
 from tarfile import open as tar
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 
 PACKAGES = None
 
@@ -121,6 +121,21 @@ def find_deps(path):
     chdir(cwd)
     return(deps)
 
+def extract_zst(path):
+    '''Extract zstandard file'''
+    import zstandard as zstd
+    wh = NamedTemporaryFile()
+    with open(path, "rb") as rh:
+        dctx = zstd.ZstdDecompressor()
+        reader = dctx.stream_reader(rh)
+        while True:
+            chunk = reader.read(65536)
+            if not chunk:
+                break
+            wh.write(chunk)
+    wh.seek(0, 0)
+    return wh
+
 def parse_argv():
     '''Parse command line arguments'''
     parser = ArgumentParser()
@@ -131,8 +146,13 @@ def main():
     '''Program entry point'''
     args = parse_argv()
     if isfile(args.path):
+        # tarball module doesn't yet support zst file, temporary workaround
+        if splitext(args.path)[1] == ".zst":
+            fo = extract_zst(args.path)
+        else:
+            fo = open(args.path, "rb")
+        tarball = tar(fileobj=fo)
         pkgdir = TemporaryDirectory()
-        tarball = tar(args.path)
         tarball.extractall(pkgdir.name)
         args.path = pkgdir.name
     if isdir(args.path):
