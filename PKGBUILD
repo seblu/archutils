@@ -9,7 +9,7 @@ arch=('any')
 url='https://git.seblu.net/archlinux/archutils'
 license=('GPL2')
 makedepends=('git')
-depends=('python' 'bash' 'zsh' 'file' 'grep' 'pyalpm' 'python-pyelftools'
+depends=('python' 'bash' 'zsh' 'file' 'grep' 'gawk' 'pyalpm' 'python-pyelftools'
          'python-pygments' 'pacman-contrib')
 provides=('archutils' 'kernel-reinstall')
 replaces=('kernel-reinstall')
