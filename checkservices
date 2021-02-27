@@ -22,9 +22,6 @@
 # bash options
 shopt -s xpg_echo
 
-# disable grep options to avoid non default behaviour
-unset GREP_OPTIONS
-
 # systemd cgroup path
 SYSTEMD_CGROUP_BASE_PATH='/sys/fs/cgroup/systemd'
 
@@ -124,7 +121,8 @@ get_broken_maps() {
                 continue
             }
             # only file mapped as executable
-            deleted="$(grep -F '(deleted)' "$maps_path"|sed -nr 's|^\S+ ..x. \S+ \S+ \S+ \s+||p')"
+            # do not use awk fields sepration, path may contain spaces
+            deleted="$(awk '/^\S+ ..x. .+\(deleted\)$/ {sub(/^(\S+\s+){5}/,""); sub(/ \(deleted\)$/,""); print}' "$maps_path")"
             if [[ $deleted ]]; then
                 printf "%s\n" $service
                 break
@@ -136,7 +134,7 @@ get_broken_maps() {
 # get dbus clients on the system bus
 get_dbus_names() {
     dbus-send --system --dest=org.freedesktop.DBus --type=method_call --print-reply \
-    /org/freedesktop/DBus org.freedesktop.DBus.ListNames|sed -rn 's/\s*string "(.*)"/\1/p'
+    /org/freedesktop/DBus org.freedesktop.DBus.ListNames|awk -F'"' '/^\s*string/ {print $2}'
 }
 
 # get systemd services not registered on dbus system bus
@@ -214,7 +212,7 @@ restart_services() {
 
 # reload or reexectute systemd
 reload_systemd() {
-  if grep -qF '(deleted)' /proc/1/maps; then
+  if ! awk '/ \(deleted\)$/ {exit(1)}' /proc/1/maps; then
     arrow 'Reexec systemd'
     systemctl --system daemon-reexec
   else

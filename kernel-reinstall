@@ -29,7 +29,7 @@ cd "/usr/lib/kernel"
 
 for _k in *; do
 	[[ -d "$_k" ]] && continue
-	file -b "$_k" | grep -q "^Linux kernel" || continue
+	[[ "$(file -b '$_k')" =~ ^"Linux kernel" ]] || continue
 	ver=${_k#*-}
 	if [[ -d "/boot/$machineid/$ver" ]]; then
 		kernel-install remove "$ver"
