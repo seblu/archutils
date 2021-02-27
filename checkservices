@@ -101,7 +101,7 @@ get_broken_maps() {
     for service in $(get_services); do
         unit_path="$(systemctl --property ControlGroup --value show "$service")"
         # hack to fix to systemd internal cgroup escaping on slice
-        unit_path="$(printf "$unit_path"|sed 's,\\x5c,\\,')"
+        unit_path="${unit_path/\\x5c/\\}"
         # get the right pidfile name
         pidfile=''
         for path in "$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
