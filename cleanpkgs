@@ -16,4 +16,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-exec pacman -Rs $(pacman -Qqdt) $(pacman -Qqm) "$@"
+declare -a pkgs=()
+pkgs+=($(pacman -Qqdt))
+pkgs+=($(pacman -Qqm))
+
+(( ${#pkgs[*]} == 0 )) && exit 0
+exec pacman -Rs "$@" "${pkgs[@]}"
