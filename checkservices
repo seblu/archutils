@@ -23,7 +23,7 @@
 shopt -s xpg_echo
 
 # systemd cgroup path
-SYSTEMD_CGROUP_BASE_PATH='/sys/fs/cgroup/systemd'
+SYSTEMD_CGROUP_BASE_PATH='/sys/fs/cgroup'
 
 # colors
 if [[ -t 1 ]]; then
@@ -101,8 +101,11 @@ get_broken_maps() {
         unit_path="${unit_path/\\x5c/\\}"
         # get the right pidfile name
         pidfile=''
-        for path in "$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
-            "$SYSTEMD_CGROUP_BASE_PATH$unit_path/tasks"; do
+        for path in \
+			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
+			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/unified/cgroup.procs" \
+			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/systemd/cgroup.procs" \
+            "$SYSTEMD_CGROUP_BASE_PATH$unit_path/systemd/tasks"; do
             [[ -r "$path" ]] && pidfile="$path" && continue
         done
         [[ -z "$pidfile" ]] && error "Unable to find pid file for $service." && continue
