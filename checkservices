@@ -103,9 +103,9 @@ get_broken_maps() {
         pidfile=''
         for path in \
 			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/cgroup.procs" \
-			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/unified/cgroup.procs" \
-			"$SYSTEMD_CGROUP_BASE_PATH$unit_path/systemd/cgroup.procs" \
-            "$SYSTEMD_CGROUP_BASE_PATH$unit_path/systemd/tasks"; do
+			"$SYSTEMD_CGROUP_BASE_PATH/unified$unit_path/cgroup.procs" \
+			"$SYSTEMD_CGROUP_BASE_PATH/systemd$unit_path/cgroup.procs" \
+            "$SYSTEMD_CGROUP_BASE_PATH/systemd$unit_path/tasks"; do
             [[ -r "$path" ]] && pidfile="$path" && continue
         done
         [[ -z "$pidfile" ]] && error "Unable to find pid file for $service." && continue
